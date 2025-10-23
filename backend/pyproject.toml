@@ -1,21 +1,17 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
 
 [project]
 name = "quests-backend"
-version = "0.1.0"
-description = "Skeleton FastAPI backend for the Quests project."
-readme = "README.md"
-authors = [{name = "Quests Team"}]
-license = {text = "MIT"}
+version = "0.0.1"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.111.0",
     "uvicorn[standard]>=0.30.0",
 ]
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
 packages = ["app"]
 
 [tool.ruff]
