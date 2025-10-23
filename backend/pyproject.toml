@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quests-backend"
+version = "0.1.0"
+description = "Skeleton FastAPI backend for the Quests project."
+readme = "README.md"
+authors = [{name = "Quests Team"}]
+license = {text = "MIT"}
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.ruff]
+select = ["E", "F", "I", "UP"]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
