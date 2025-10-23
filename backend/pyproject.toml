@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling>=1.21.0"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "quests-backend"
@@ -15,11 +15,8 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
 ]
 
-[tool.hatch.build.targets.wheel]
+[tool.setuptools]
 packages = ["app"]
-
-[tool.hatch.metadata]
-allow-direct-references = true
 
 [tool.ruff]
 select = ["E", "F", "I", "UP"]
@@ -29,4 +26,3 @@ target-version = "py312"
 [tool.ruff.format]
 indent-style = "space"
 quote-style = "double"
-
