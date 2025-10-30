@@ -1,18 +1,34 @@
-"""Entry point for the Quests FastAPI application."""
+import uuid
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 
-app = FastAPI(title="Quests Backend")
-
-
-@app.get("/", summary="Health check", tags=["Health"])
-async def read_root() -> dict[str, str]:
-    """Return a simple greeting."""
-    return {"message": "Hello world"}
+app = FastAPI()
 
 
-@app.get("/health", summary="API health status", tags=["Health"])
-async def health_check() -> dict[str, str]:
-    """Endpoint that reports the API is running."""
-    return {"status": "ok"}
+class Quest(BaseModel):
+    id: uuid.UUID
+    name: str
+    description: str
 
+
+class Saga(BaseModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    quests: list[Quest] = []
+
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+
+# @app.get("/items/{item_id}")
+# def read_item(item_id: int, q: Union[str, None] = None):
+#     return {"item_id": item_id, "q": q}
+#
+#
+# @app.put("/items/{item_id}")
+# def update_item(item_id: int, item: Item):
+#     return {"item_name": item.name, "item_id": item_id}
