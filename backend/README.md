@@ -28,7 +28,7 @@ pip install -r requirements.txt
 Use `uvicorn` to run the API locally:
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn src.main:app --reload
 ```
 
 Visit <http://localhost:8000/> to see the "Hello world" response.
