@@ -1,9 +1,33 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: quests
+      POSTGRES_PASSWORD: quests
+      POSTGRES_DB: quests
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
   backend:
     build:
       context: ./backend
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql+psycopg://quests:quests@postgres:5432/quests
     volumes:
       - ./backend/src:/app/app
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
