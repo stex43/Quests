@@ -24,13 +24,6 @@ class Saga(BaseModel):
     quests: list[Quest] = []
 
 
-# todo: migrations
-@app.on_event("startup")
-def startup():
-    # models.Base.metadata.drop_all(bind=engine)
-    models.Base.metadata.create_all(bind=engine)
-
-
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
