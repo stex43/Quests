@@ -23,6 +23,8 @@ from src import models
 target_metadata = models.Base.metadata
 
 
+from src.settings import settings
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -41,10 +43,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    # todo: url = config.get_main_option("sqlalchemy.url")
-    url = "postgresql+psycopg://quests:quests@localhost:5432/quests"
     context.configure(
-        url=url,
+        url=settings.database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -62,8 +62,7 @@ def run_migrations_online() -> None:
 
     """
     configuration = config.get_section(config.config_ini_section) or {}
-    # todo: configuration["sqlalchemy.url"] = get_database_url()
-    configuration["sqlalchemy.url"] = "postgresql+psycopg://quests:quests@localhost:5432/quests"
+    configuration["sqlalchemy.url"] = settings.database_url
 
     connectable = engine_from_config(
         configuration,

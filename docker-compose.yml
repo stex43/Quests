@@ -18,13 +18,19 @@ services:
   backend:
     build:
       context: ./backend
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    command:  >
+      sh -c "
+      alembic upgrade head &&
+      uvicorn src.main:app --host 0.0.0.0 --port 8000
+      "
     environment:
-      DATABASE_URL: postgresql+psycopg://quests:quests@postgres:5432/quests
+        APP_ENV: docker
     volumes:
       - ./backend/src:/app/app
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env.docker
     depends_on:
       db:
         condition: service_healthy
