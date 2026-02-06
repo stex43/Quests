@@ -1,8 +1,9 @@
 import uuid
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from fastapi.params import Depends
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src import models
@@ -11,13 +12,33 @@ from src.database import engine, get_db
 app = FastAPI()
 
 
+class QuestCreate(BaseModel):
+    title: str
+    description: str
+    saga_id: uuid.UUID
+
+
 class Quest(BaseModel):
+    id: uuid.UUID
+    title: str
+    description: str
+    saga_id: uuid.UUID
+
+
+class SagaCreate(BaseModel):
+    # todo: max length
+    title: str
+    # todo: max length
+    description: str
+
+
+class Saga(BaseModel):
     id: uuid.UUID
     title: str
     description: str
 
 
-class Saga(BaseModel):
+class SagaExtended(BaseModel):
     id: uuid.UUID
     title: str
     description: str
@@ -28,12 +49,26 @@ class Saga(BaseModel):
 def read_root():
     return {"Hello": "World"}
 
+@app.post("/sagas", status_code=status.HTTP_201_CREATED, response_model=Saga)
+def create_saga(saga: SagaCreate, db_session: Session = Depends(get_db)):
+    new_saga = models.Saga(id=uuid.uuid4(), title=saga.title, description=saga.description)
+    db_session.add(new_saga)
+    db_session.commit()
+    return new_saga
 
-# todo: work on responses in api
-@app.post("/items")
-def create_quest(quest: Quest, db: Session = Depends(get_db)):
-    new_quest = models.Quest(id=uuid.uuid4(), title=quest.title, description=quest.description)
-    db.add(new_quest)
-    db.commit()
-    db.refresh(new_quest)
-    return {"status": "success", "quest": new_quest}
+# todo: paging
+@app.get("/sagas", status_code=status.HTTP_200_OK, response_model=list[SagaExtended])
+def get_sagas(db_session: Session = Depends(get_db)):
+    return db_session.scalars(select(models.Saga)).all()
+
+@app.post("/quests", status_code=status.HTTP_201_CREATED, response_model=Quest)
+def create_quest(quest: QuestCreate, db_session: Session = Depends(get_db)):
+    new_quest = models.Quest(id=uuid.uuid4(), title=quest.title, description=quest.description, saga_id=quest.saga_id)
+    db_session.add(new_quest)
+    db_session.commit()
+    return new_quest
+
+# todo: paging
+@app.get("/quests", status_code=status.HTTP_200_OK, response_model=list[Quest])
+def get_quests(db_session: Session = Depends(get_db)):
+    return db_session.scalars(select(models.Quest)).all()

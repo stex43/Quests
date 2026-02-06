@@ -16,8 +16,7 @@ class Saga(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     quests: Mapped[list["Quest"]] = relationship(
         back_populates="saga",
-        cascade="all, delete-orphan",
-        order_by="Quest.position",
+        cascade="all, delete-orphan"
     )
 
 
