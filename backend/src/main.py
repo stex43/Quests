@@ -49,6 +49,7 @@ class ArcExtended(BaseModel):
 def read_root():
     return {"Hello": "World"}
 
+
 @app.post("/arcs", status_code=status.HTTP_201_CREATED, response_model=Arc)
 def create_arc(arc: ArcCreate, db_session: Session = Depends(get_db)):
     new_arc = models.Arc(id=uuid.uuid4(), title=arc.title, description=arc.description)
@@ -56,10 +57,12 @@ def create_arc(arc: ArcCreate, db_session: Session = Depends(get_db)):
     db_session.commit()
     return new_arc
 
+
 # todo: paging
 @app.get("/arcs", status_code=status.HTTP_200_OK, response_model=list[ArcExtended])
 def get_arcs(db_session: Session = Depends(get_db)):
     return db_session.scalars(select(models.Arc)).all()
+
 
 @app.post("/quests", status_code=status.HTTP_201_CREATED, response_model=Quest)
 def create_quest(quest: QuestCreate, db_session: Session = Depends(get_db)):
@@ -67,6 +70,7 @@ def create_quest(quest: QuestCreate, db_session: Session = Depends(get_db)):
     db_session.add(new_quest)
     db_session.commit()
     return new_quest
+
 
 # todo: paging
 @app.get("/quests", status_code=status.HTTP_200_OK, response_model=list[Quest])
