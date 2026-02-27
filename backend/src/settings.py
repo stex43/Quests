@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     postgres_host: str
     postgres_port: int
     postgres_db: str
+    cors_origins: list[str] = []
 
     @property
     def database_url(self) -> str:
