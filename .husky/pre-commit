@@ -1,0 +1,6 @@
+cd "$(git rev-parse --show-toplevel)/frontend"
+
+node_modules/.bin/prettier src/ --write --log-level warn
+node_modules/.bin/eslint src/ --ext .ts,.tsx --fix
+git add -u
+node_modules/.bin/tsc --noEmit

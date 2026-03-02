@@ -6,6 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import reactX from 'eslint-plugin-react-x'
 import reactDom from 'eslint-plugin-react-dom'
+import prettier from 'eslint-config-prettier'
 
 export default defineConfig([
   globalIgnores(['dist']),
@@ -23,6 +24,7 @@ export default defineConfig([
 
       reactX.configs['recommended-typescript'],
       reactDom.configs.recommended,
+      prettier,
     ],
     languageOptions: {
       ecmaVersion: 2020,

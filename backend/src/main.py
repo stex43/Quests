@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Depends
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -8,8 +9,16 @@ from sqlalchemy.orm import Session
 
 from src import models
 from src.database import engine, get_db
+from src.settings import settings
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class QuestCreate(BaseModel):
