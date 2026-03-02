@@ -1,3 +1,5 @@
 cd "$(git rev-parse --show-toplevel)/frontend"
-npx lint-staged
-npm run typecheck
+
+node_modules/.bin/eslint src/ --ext .ts,.tsx --fix
+git add -u
+node_modules/.bin/tsc --noEmit

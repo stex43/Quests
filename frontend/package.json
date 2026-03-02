@@ -11,9 +11,6 @@
     "preview": "vite preview",
     "prepare": "cd .. && ./frontend/node_modules/.bin/husky"
   },
-  "lint-staged": {
-    "src/**/*.{ts,tsx}": "eslint --fix"
-  },
   "dependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
@@ -31,7 +28,6 @@
     "eslint-plugin-react-x": "^2.12.2",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.3.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"
