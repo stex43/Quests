@@ -9,13 +9,10 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "cd .. && ./frontend/node_modules/.bin/husky"
   },
   "lint-staged": {
-    "**/*.{ts,tsx}": [
-      "eslint --fix",
-      "tsc --noEmit"
-    ]
+    "src/**/*.{ts,tsx}": "eslint --fix"
   },
   "dependencies": {
     "react": "^19.2.0",
