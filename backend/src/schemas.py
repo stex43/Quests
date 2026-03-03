@@ -9,6 +9,12 @@ class QuestCreate(BaseModel):
     arc_id: uuid.UUID
 
 
+class QuestUpdate(BaseModel):
+    title: str
+    description: str
+    arc_id: uuid.UUID
+
+
 class Quest(BaseModel):
     id: uuid.UUID
     title: str
@@ -17,6 +23,11 @@ class Quest(BaseModel):
 
 
 class ArcCreate(BaseModel):
+    # todo: max length
+    title: str
+
+
+class ArcUpdate(BaseModel):
     # todo: max length
     title: str
 
