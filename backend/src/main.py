@@ -43,7 +43,7 @@ def get_arcs(db_session: Session = Depends(get_db)):
 def update_arc(arc_id: uuid.UUID, arc_update: schemas.ArcUpdate, db_session: Session = Depends(get_db)):
     db_arc = db_session.get(models.Arc, arc_id)
     if not db_arc:
-        raise HTTPException(status_code=404, detail="Arc {arc_id} not found")
+        raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
     db_arc.title = arc_update.title
     db_session.commit()
 
@@ -61,7 +61,7 @@ def create_quest(quest: schemas.QuestCreate, db_session: Session = Depends(get_d
 def update_quest(quest_id: uuid.UUID, quest_update: schemas.QuestUpdate, db_session: Session = Depends(get_db)):
     db_quest = db_session.get(models.Quest, quest_id)
     if not db_quest:
-        raise HTTPException(status_code=404, detail="Quest {quest_id} not found")
+        raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
     db_quest.title = quest_update.title
     db_quest.description = quest_update.description
     # todo: what if there's no such arc
