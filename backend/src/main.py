@@ -37,20 +37,16 @@ class Quest(BaseModel):
 class ArcCreate(BaseModel):
     # todo: max length
     title: str
-    # todo: max length
-    description: str
 
 
 class Arc(BaseModel):
     id: uuid.UUID
     title: str
-    description: str
 
 
 class ArcExtended(BaseModel):
     id: uuid.UUID
     title: str
-    description: str
     quests: list[Quest] = []
 
 
@@ -61,7 +57,7 @@ def read_root():
 
 @app.post("/arcs", status_code=status.HTTP_201_CREATED, response_model=Arc)
 def create_arc(arc: ArcCreate, db_session: Session = Depends(get_db)):
-    new_arc = models.Arc(id=uuid.uuid4(), title=arc.title, description=arc.description)
+    new_arc = models.Arc(id=uuid.uuid4(), title=arc.title)
     db_session.add(new_arc)
     db_session.commit()
     return new_arc
