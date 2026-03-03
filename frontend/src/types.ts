@@ -4,9 +4,9 @@ export interface Quest {
   description: string;
   arc_id: string;
 }
+
 export interface Arc {
   id: string;
   title: string;
-  description: string;
   quests: Quest[];
 }
