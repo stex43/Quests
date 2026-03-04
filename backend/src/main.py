@@ -67,3 +67,21 @@ def update_quest(quest_id: uuid.UUID, quest_update: schemas.QuestUpdate, db_sess
     # todo: what if there's no such arc
     # db_quest.arc_id = quest_update.arc_id
     db_session.commit()
+
+
+@app.delete("/arcs/{arc_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_arc(arc_id: uuid.UUID, db_session: Session = Depends(get_db)):
+    db_arc = db_session.get(models.Arc, arc_id)
+    if not db_arc:
+        raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
+    db_session.delete(db_arc)
+    db_session.commit()
+
+
+@app.delete("/quests/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_quest(quest_id: uuid.UUID, db_session: Session = Depends(get_db)):
+    db_quest = db_session.get(models.Quest, quest_id)
+    if not db_quest:
+        raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
+    db_session.delete(db_quest)
+    db_session.commit()

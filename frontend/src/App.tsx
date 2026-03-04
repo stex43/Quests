@@ -1,40 +1,34 @@
-import { useEffect, useState } from "react";
-import { getArcs } from "./api";
-import type { Arc } from "./types";
+import { useState } from "react";
+import { useArcs } from "./hooks/useArcs";
+import { ArcList } from "./components/ArcList";
+import { QuestDetail } from "./components/QuestDetail";
+import type { Quest } from "./types";
+import styles from "./App.module.css";
 
 export default function App() {
-  const [arcs, setArcs] = useState<Arc[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { arcs, loading, error, addArc, renameArc, removeArc, addQuest, removeQuest } = useArcs();
+  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
 
-  useEffect(() => {
-    getArcs()
-      .then(setArcs)
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading) return <p style={{ padding: 24 }}>Loading...</p>;
+  if (error) return <p style={{ padding: 24 }}>Error: {error}</p>;
 
   return (
-    <ul>
-      {arcs.map((arc) => (
-        <li key={arc.id}>
-          <strong>{arc.title}</strong> — {arc.description}
-          <ul>
-            {arc.quests.map((quest) => (
-              <li key={quest.id}>
-                {quest.title} — {quest.description}
-              </li>
-            ))}
-          </ul>
-        </li>
-      ))}
-    </ul>
+    <div className={styles.container}>
+      <div className={styles.leftPanel}>
+        <ArcList
+          arcs={arcs}
+          selectedQuestId={selectedQuest?.id ?? null}
+          onSelectQuest={setSelectedQuest}
+          addArc={addArc}
+          renameArc={renameArc}
+          removeArc={removeArc}
+          addQuest={addQuest}
+          removeQuest={removeQuest}
+        />
+      </div>
+      <div className={styles.rightPanel}>
+        <QuestDetail quest={selectedQuest} />
+      </div>
+    </div>
   );
 }

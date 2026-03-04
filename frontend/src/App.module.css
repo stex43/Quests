@@ -1,0 +1,20 @@
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.leftPanel {
+  width: 560px;
+  min-width: 560px;
+  border-right: 1px solid #e5e7eb;
+  padding: 24px 20px;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+.rightPanel {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+  background-color: #ffffff;
+}

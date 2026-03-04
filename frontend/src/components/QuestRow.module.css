@@ -1,0 +1,47 @@
+.questItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.questItem:hover {
+  background: #f9fafb;
+}
+
+.questItem:has(.questButtonSelected) {
+  background: #eff6ff;
+}
+
+.questItem:has(.questButtonSelected):hover {
+  background: #eff6ff;
+}
+
+.questButton {
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #111827;
+  text-align: left;
+}
+
+.questButtonSelected {
+  color: #1d4ed8;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #9ca3af;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
