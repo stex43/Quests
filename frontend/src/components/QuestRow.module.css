@@ -1,30 +1,34 @@
-.questRow {
+.questItem {
   display: flex;
   align-items: center;
-  padding: 8px 14px;
   gap: 8px;
-  cursor: pointer;
+  padding: 0 14px;
 }
 
-.questRow:hover {
+.questItem:hover {
   background: #f9fafb;
 }
 
-.questRowSelected {
+.questItem:has(.questButtonSelected) {
   background: #eff6ff;
 }
 
-.questRowSelected:hover {
+.questItem:has(.questButtonSelected):hover {
   background: #eff6ff;
 }
 
-.questTitle {
+.questButton {
   flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0;
   font-size: 14px;
   color: #111827;
+  text-align: left;
 }
 
-.questTitleSelected {
+.questButtonSelected {
   color: #1d4ed8;
 }
 
@@ -39,4 +43,5 @@
   align-items: center;
   font-size: 14px;
   line-height: 1;
+  flex-shrink: 0;
 }

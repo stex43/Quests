@@ -11,20 +11,20 @@ interface QuestRowProps {
 
 export function QuestRow({ quest, isSelected, onSelect, onDelete }: QuestRowProps) {
   return (
-    <div
-      className={[styles.questRow, isSelected ? styles.questRowSelected : ""].join(" ").trim()}
-      onClick={() => {
-        onSelect(quest);
-      }}
-    >
-      <span
-        className={[styles.questTitle, isSelected ? styles.questTitleSelected : ""]
+    <li className={styles.questItem}>
+      <button
+        type="button"
+        className={[styles.questButton, isSelected ? styles.questButtonSelected : ""]
           .join(" ")
           .trim()}
+        onClick={() => {
+          onSelect(quest);
+        }}
       >
         {quest.title}
-      </span>
+      </button>
       <button
+        type="button"
         className={styles.iconButton}
         onClick={(e) => {
           onDelete(quest.id, e);
@@ -33,6 +33,6 @@ export function QuestRow({ quest, isSelected, onSelect, onDelete }: QuestRowProp
       >
         <TrashIcon />
       </button>
-    </div>
+    </li>
   );
 }

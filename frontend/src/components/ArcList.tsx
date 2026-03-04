@@ -1,50 +1,53 @@
+import { useState } from "react";
 import type { Arc, Quest } from "../types";
 import { ArcCard } from "./ArcCard";
 import styles from "./ArcList.module.css";
 
 interface ArcListProps {
   arcs: Arc[];
-  expandedArcIds: Set<string>;
-  editingArcId: string | null;
-  editingArcTitle: string;
   selectedQuestId: string | null;
-  newArcTitle: string;
-  newQuestTitles: Record<string, string>;
-  onNewArcTitleChange: (value: string) => void;
-  onCreateArc: () => void;
-  onToggleExpand: (arcId: string) => void;
-  onStartEdit: (arc: Arc, e: React.MouseEvent) => void;
-  onEditTitleChange: (title: string) => void;
-  onCommitEdit: (arcId: string) => void;
-  onCancelEdit: () => void;
-  onDeleteArc: (arcId: string, e: React.MouseEvent) => void;
-  onSelectQuest: (quest: Quest) => void;
-  onDeleteQuest: (questId: string, e: React.MouseEvent) => void;
-  onNewQuestTitleChange: (arcId: string, value: string) => void;
-  onCreateQuest: (arcId: string) => void;
+  onSelectQuest: (quest: Quest | null) => void;
+  addArc: (title: string) => Promise<Arc>;
+  renameArc: (id: string, title: string) => Promise<void>;
+  removeArc: (id: string) => Promise<void>;
+  addQuest: (title: string, arcId: string) => Promise<Quest>;
+  removeQuest: (id: string) => Promise<void>;
 }
 
 export function ArcList({
   arcs,
-  expandedArcIds,
-  editingArcId,
-  editingArcTitle,
   selectedQuestId,
-  newArcTitle,
-  newQuestTitles,
-  onNewArcTitleChange,
-  onCreateArc,
-  onToggleExpand,
-  onStartEdit,
-  onEditTitleChange,
-  onCommitEdit,
-  onCancelEdit,
-  onDeleteArc,
   onSelectQuest,
-  onDeleteQuest,
-  onNewQuestTitleChange,
-  onCreateQuest,
+  addArc,
+  renameArc,
+  removeArc,
+  addQuest,
+  removeQuest,
 }: ArcListProps) {
+  const [expandedArcIds, setExpandedArcIds] = useState<Set<string>>(() => new Set());
+  const [newArcTitle, setNewArcTitle] = useState("");
+
+  function toggleExpand(arcId: string) {
+    setExpandedArcIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(arcId)) next.delete(arcId);
+      else next.add(arcId);
+      return next;
+    });
+  }
+
+  async function handleCreateArc() {
+    const title = newArcTitle.trim();
+    if (!title) return;
+    try {
+      const arc = await addArc(title);
+      setNewArcTitle("");
+      setExpandedArcIds((prev) => new Set([...prev, arc.id]));
+    } catch {
+      // error surfaced via useArcs
+    }
+  }
+
   return (
     <>
       <h1 className={styles.heading}>Arcs</h1>
@@ -55,13 +58,13 @@ export function ArcList({
           placeholder="New arc name..."
           value={newArcTitle}
           onChange={(e) => {
-            onNewArcTitleChange(e.target.value);
+            setNewArcTitle(e.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") onCreateArc();
+            if (e.key === "Enter") void handleCreateArc();
           }}
         />
-        <button className={styles.addButton} onClick={onCreateArc}>
+        <button className={styles.addButton} onClick={() => void handleCreateArc()}>
           +
         </button>
       </div>
@@ -71,32 +74,15 @@ export function ArcList({
           key={arc.id}
           arc={arc}
           isExpanded={expandedArcIds.has(arc.id)}
-          isEditing={editingArcId === arc.id}
-          editingArcTitle={editingArcTitle}
           selectedQuestId={selectedQuestId}
-          newQuestTitle={newQuestTitles[arc.id] ?? ""}
           onToggleExpand={() => {
-            onToggleExpand(arc.id);
-          }}
-          onStartEdit={(e) => {
-            onStartEdit(arc, e);
-          }}
-          onEditTitleChange={onEditTitleChange}
-          onCommitEdit={() => {
-            onCommitEdit(arc.id);
-          }}
-          onCancelEdit={onCancelEdit}
-          onDelete={(e) => {
-            onDeleteArc(arc.id, e);
+            toggleExpand(arc.id);
           }}
           onSelectQuest={onSelectQuest}
-          onDeleteQuest={onDeleteQuest}
-          onNewQuestTitleChange={(value) => {
-            onNewQuestTitleChange(arc.id, value);
-          }}
-          onCreateQuest={() => {
-            onCreateQuest(arc.id);
-          }}
+          renameArc={renameArc}
+          removeArc={removeArc}
+          addQuest={addQuest}
+          removeQuest={removeQuest}
         />
       ))}
     </>
