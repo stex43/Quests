@@ -1,0 +1,41 @@
+.questDetailTitle {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 0 0 20px 0;
+}
+
+.completeButton {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 28px;
+}
+
+.descriptionLabel {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4f46e5;
+  margin: 0 0 12px 0;
+}
+
+.descriptionText {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.emptyState {
+  color: #9ca3af;
+  margin-top: 40px;
+}

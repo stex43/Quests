@@ -1,0 +1,42 @@
+.questRow {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.questRow:hover {
+  background: #f9fafb;
+}
+
+.questRowSelected {
+  background: #eff6ff;
+}
+
+.questRowSelected:hover {
+  background: #eff6ff;
+}
+
+.questTitle {
+  flex: 1;
+  font-size: 14px;
+  color: #111827;
+}
+
+.questTitleSelected {
+  color: #1d4ed8;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #9ca3af;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1;
+}
