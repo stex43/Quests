@@ -37,7 +37,7 @@ export function useArcs(): UseArcsReturn {
       return arcWithQuests;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      throw err;
+      throw new Error(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -47,7 +47,7 @@ export function useArcs(): UseArcsReturn {
       setArcs((prev) => prev.map((a) => (a.id === id ? { ...a, title } : a)));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      throw err;
+      throw new Error(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -57,7 +57,7 @@ export function useArcs(): UseArcsReturn {
       setArcs((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      throw err;
+      throw new Error(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -70,7 +70,7 @@ export function useArcs(): UseArcsReturn {
       return quest;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      throw err;
+      throw new Error(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -80,7 +80,7 @@ export function useArcs(): UseArcsReturn {
       setArcs((prev) => prev.map((a) => ({ ...a, quests: a.quests.filter((q) => q.id !== id) })));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      throw err;
+      throw new Error(err instanceof Error ? err.message : String(err));
     }
   }
 
