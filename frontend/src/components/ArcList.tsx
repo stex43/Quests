@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import type { Arc, Quest } from "../types";
 import { ArcCard } from "./ArcCard";
 import "./ArcList.css";
@@ -31,6 +31,7 @@ export const ArcList = memo(function ArcList({
   const [expandedArcIds, setExpandedArcIds] = useState<Set<string>>(() => new Set());
   const [newArcTitle, setNewArcTitle] = useState("");
   const [isCreatingArc, setIsCreatingArc] = useState(false);
+  const createArcInFlightRef = useRef(false);
 
   const toggleExpand = useCallback((arcId: string) => {
     setExpandedArcIds((prev) => {
@@ -54,8 +55,10 @@ export const ArcList = memo(function ArcList({
   );
 
   async function handleCreateArc() {
+    if (createArcInFlightRef.current) return;
     const title = newArcTitle.trim();
     if (!title) return;
+    createArcInFlightRef.current = true;
     setIsCreatingArc(true);
     try {
       await onCreateArc(title);
@@ -64,6 +67,7 @@ export const ArcList = memo(function ArcList({
       // error displayed by parent via mutationError
     } finally {
       setIsCreatingArc(false);
+      createArcInFlightRef.current = false;
     }
   }
 

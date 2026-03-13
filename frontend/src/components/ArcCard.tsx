@@ -37,6 +37,7 @@ export const ArcCard = memo(function ArcCard({
   const editInputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
   const commitInFlightRef = useRef(false);
+  const createQuestInFlightRef = useRef(false);
 
   useEffect(() => {
     if (isEditing) editInputRef.current?.focus();
@@ -85,8 +86,10 @@ export const ArcCard = memo(function ArcCard({
   }
 
   async function handleCreateQuest() {
+    if (createQuestInFlightRef.current) return;
     const title = newQuestTitle.trim();
     if (!title) return;
+    createQuestInFlightRef.current = true;
     setIsCreatingQuest(true);
     try {
       await onCreateQuest(arc.id, title);
@@ -95,6 +98,7 @@ export const ArcCard = memo(function ArcCard({
       // error displayed by parent via mutationError
     } finally {
       setIsCreatingQuest(false);
+      createQuestInFlightRef.current = false;
     }
   }
 
@@ -137,6 +141,9 @@ export const ArcCard = memo(function ArcCard({
               }}
               onBlur={() => {
                 if (!cancelledRef.current) void commitEdit();
+                // Reset so it's ready for the next edit session.
+                // No double-blur risk: browsers don't fire blur on unmount when
+                // the element is already unfocused (it lost focus on click-away).
                 cancelledRef.current = false;
               }}
             />
