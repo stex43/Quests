@@ -2,7 +2,7 @@ export interface Quest {
   id: string;
   title: string;
   description: string;
-  arc_id: string;
+  arcId: string;
 }
 
 export interface Arc {

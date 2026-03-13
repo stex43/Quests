@@ -1,0 +1,44 @@
+.quest-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  gap: 8px;
+  background: transparent;
+}
+
+.quest-row:hover {
+  background: #f9fafb;
+}
+
+.quest-row[data-selected="true"] {
+  background: #eff6ff;
+}
+
+.quest-select-area {
+  display: flex;
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.quest-select-area:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.quest-title {
+  flex: 1;
+  font-size: 14px;
+  color: #111827;
+}
+
+.quest-row[data-selected="true"] .quest-title {
+  color: #1d4ed8;
+}
