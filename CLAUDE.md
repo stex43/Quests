@@ -113,6 +113,12 @@ Split-screen layout with a left navigation panel (300px fixed) and right detail 
 - Error propagation: child catches, re-throws to parent via callback; parent sets `mutationError`
 - Accessibility: `<button>` elements (not divs), ARIA labels on all interactive elements, `focus-visible` outlines (`2px solid #4f46e5`), Enter key support on inputs
 
+## Workflow
+
+- For any coding, editing, or fixing tasks → delegate to the `coder` subagent
+- When asked to review code → delegate to the `reviewer` subagent
+- Never run the reviewer automatically — only when the user explicitly asks
+
 ## Code Style
 
 - Python: ruff with `E`, `W`, `F`, `I`, `UP` rules, line length 100, Python 3.12 target, double quotes
