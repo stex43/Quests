@@ -53,7 +53,7 @@ The docker-compose stack does NOT include the frontend; run it separately with `
 
 ## Environment
 
-Backend reads env vars from a `.env` file (or `.env.docker` for the Docker service). Required vars:
+Backend reads env vars from a `.env` file (or `.env.docker` for the Docker service). Copy `backend/.env.example` to `backend/.env` and fill in values. Required vars:
 
 ```
 POSTGRES_USER=
@@ -63,20 +63,29 @@ POSTGRES_PORT=
 POSTGRES_DB=
 ```
 
+Optional vars:
+
+```
+DEBUG=False        # set to True to enable SQLAlchemy query logging
+CORS_ORIGINS=[]   # e.g. ["http://localhost:5173"]
+```
+
 The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, otherwise `.env`.
 
 ## Architecture
 
 ### Backend (`backend/src/`)
 
-- `main.py` — FastAPI app, all route handlers, and Pydantic request/response schemas (colocated); CRUD for arcs and quests including `DELETE /arcs/{arc_id}` and `DELETE /quests/{quest_id}` (both return 204)
-- `models.py` — SQLAlchemy ORM models (`Arc`, `Quest`)
-- `database.py` — engine and `get_db` session dependency
-- `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars
+- `main.py` — FastAPI app and all route handlers; validation errors return 400 (not 422); uses `DbSession = Annotated[Session, Depends(get_db)]` alias for session sharing across repo dependencies
+- `schemas.py` — Pydantic request/response schemas; `ConstrainedStr` (max 100) for titles, `ConstrainedText` (max 1000) for descriptions; response schemas have `model_config = ConfigDict(from_attributes=True)`
+- `repositories.py` — `ArcRepository` and `QuestRepository`; each takes `Session` in `__init__`; `create` methods call `db.refresh()` after `commit()`; `get_all` uses `selectinload` for eager loading
+- `models.py` — SQLAlchemy ORM models (`Arc`, `Quest`); `Quest.arc` has `lazy="raise"`
+- `database.py` — engine (`echo` gated on `settings.debug`), `SessionLocal`, and `get_db` with explicit rollback on exception
+- `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars; `debug: bool = False`
 
 ### Data Model
 
-- **Arc**: a story arc with a title and description; has many Quests (cascade delete)
+- **Arc**: a story arc with a title; has many Quests (cascade delete)
 - **Quest**: belongs to an Arc via `arc_id` FK; has title and description
 
 ### Migrations

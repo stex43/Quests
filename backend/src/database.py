@@ -4,7 +4,7 @@ from src.settings import settings
 
 
 # todo: wtf is engine and SessionLocal
-engine = create_engine(settings.database_url, echo=True)
+engine = create_engine(settings.database_url, echo=settings.debug)
 # todo: what is autocommit and autoflush and why false
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -14,6 +14,9 @@ def get_db():
     try:
         # todo: what is yield in python
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
 
