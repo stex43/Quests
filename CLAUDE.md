@@ -69,7 +69,7 @@ The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, 
 
 ### Backend (`backend/src/`)
 
-- `main.py` — FastAPI app, all route handlers, and Pydantic request/response schemas (colocated)
+- `main.py` — FastAPI app, all route handlers, and Pydantic request/response schemas (colocated); CRUD for arcs and quests including `DELETE /arcs/{arc_id}` and `DELETE /quests/{quest_id}` (both return 204)
 - `models.py` — SQLAlchemy ORM models (`Arc`, `Quest`)
 - `database.py` — engine and `get_db` session dependency
 - `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars
@@ -85,7 +85,33 @@ Alembic is configured in `backend/alembic/`. The `env.py` imports `models.Base.m
 
 ### Frontend (`frontend/src/`)
 
-Currently a Vite + React scaffold. `App.tsx` is the entry component.
+Split-screen layout with a left navigation panel (300px fixed) and right detail panel.
+
+**Entry & State (`App.tsx`)**
+- Manages all state: `arcs`, `loading`, `error`, `mutationError`, `selectedQuest`
+- Uses `arcsRef` for safe async access to latest arcs state
+- All mutation handlers defined with `useCallback` at the top level and passed down as props
+
+**Components (`frontend/src/components/`)**
+- `ArcList.tsx` — left panel container; manages arc expansion state, arc creation form, error dismissal
+- `ArcCard.tsx` — individual arc with expand/collapse, inline title editing, delete confirmation, and inline quest creation
+- `QuestRow.tsx` — single quest item with selection highlighting and delete button
+- `QuestDetail.tsx` — right panel; shows selected quest title/description and "Mark as Complete" placeholder
+- `icons.tsx` — reusable SVG icons (`PencilIcon`, `TrashIcon`)
+
+**API (`frontend/src/api.ts`)**
+- `request()` helper with unified error handling (includes HTTP status + body in errors)
+- All API calls convert snake_case responses to camelCase (`RawArc`, `RawQuest` types for the mapping)
+- Methods: `fetchArcs`, `createArc`, `updateArc`, `deleteArc`, `createQuest`, `deleteQuest`
+
+**Types (`frontend/src/types.ts`)**
+- Uses camelCase (`arcId`, not `arc_id`) throughout
+
+**Patterns to follow**
+- `React.memo` on all child components; `useCallback` on all handlers in `App.tsx`
+- Separate `mutationError` state (distinct from fetch `error`) for create/update/delete failures
+- Error propagation: child catches, re-throws to parent via callback; parent sets `mutationError`
+- Accessibility: `<button>` elements (not divs), ARIA labels on all interactive elements, `focus-visible` outlines (`2px solid #4f46e5`), Enter key support on inputs
 
 ## Code Style
 
