@@ -1,3 +1,9 @@
+cd "$(git rev-parse --show-toplevel)/backend"
+
+.venv/Scripts/ruff check --fix src/
+.venv/Scripts/ruff format src/
+git add -u
+
 cd "$(git rev-parse --show-toplevel)/frontend"
 
 node_modules/.bin/prettier src/ --write --log-level warn

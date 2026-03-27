@@ -13,10 +13,7 @@ class Arc(Base):
     __tablename__ = "arcs"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    quests: Mapped[list["Quest"]] = relationship(
-        back_populates="arc",
-        cascade="all, delete-orphan"
-    )
+    quests: Mapped[list["Quest"]] = relationship(back_populates="arc", cascade="all, delete-orphan")
 
 
 class Quest(Base):

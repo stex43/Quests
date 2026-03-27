@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.settings import settings
 
+from src.settings import settings
 
 # todo: wtf is engine and SessionLocal
 engine = create_engine(settings.database_url, echo=settings.debug)
@@ -19,5 +19,6 @@ def get_db():
         raise
     finally:
         db.close()
+
 
 # todo: async?

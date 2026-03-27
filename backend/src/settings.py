@@ -2,14 +2,11 @@ import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 _app_env = os.getenv("APP_ENV")
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=f".env.{_app_env}" if _app_env else ".env"
-    )
+    model_config = SettingsConfigDict(env_file=f".env.{_app_env}" if _app_env else ".env")
 
     postgres_user: str
     postgres_password: str

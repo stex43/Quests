@@ -130,5 +130,5 @@ Split-screen layout with a left navigation panel (300px fixed) and right detail 
 
 ## Code Style
 
-- Python: ruff with `E`, `W`, `F`, `I`, `UP` rules, line length 100, Python 3.12 target, double quotes
+- Python: ruff with `E`, `W`, `F`, `I`, `UP` rules, line length 120, Python 3.12 target, double quotes
 - TypeScript: typescript-eslint with react-hooks and react-refresh plugins

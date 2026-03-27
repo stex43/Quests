@@ -1,5 +1,4 @@
 import uuid
-
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
