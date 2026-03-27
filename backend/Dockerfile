@@ -13,7 +13,6 @@ COPY alembic.ini .
 COPY alembic ./alembic
 
 COPY src ./src
-COPY .env .
 
 EXPOSE 8000
 
