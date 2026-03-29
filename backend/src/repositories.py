@@ -44,6 +44,7 @@ class QuestRepository:
         return list(self.db.scalars(select(models.Quest).where(models.Quest.arc_id == arc_id)).all())
 
     def update(self, quest: models.Quest, title: str | None, description: str | None, arc_id: uuid.UUID | None) -> None:
+        # None means "omitted — skip this field". Callers must reject explicit null before calling this.
         if title is not None:
             quest.title = title
         if description is not None:
