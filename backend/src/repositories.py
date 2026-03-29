@@ -47,10 +47,16 @@ class QuestRepository:
     def get(self, quest_id: uuid.UUID) -> models.Quest | None:
         return self.db.get(models.Quest, quest_id)
 
-    def update(self, quest: models.Quest, title: str, description: str, arc_id: uuid.UUID) -> None:
-        quest.title = title
-        quest.description = description
-        quest.arc_id = arc_id
+    def get_by_arc(self, arc_id: uuid.UUID) -> list[models.Quest]:
+        return list(self.db.scalars(select(models.Quest).where(models.Quest.arc_id == arc_id)).all())
+
+    def update(self, quest: models.Quest, title: str | None, description: str | None, arc_id: uuid.UUID | None) -> None:
+        if title is not None:
+            quest.title = title
+        if description is not None:
+            quest.description = description
+        if arc_id is not None:
+            quest.arc_id = arc_id
         self.db.commit()
         self.db.refresh(quest)
 

@@ -67,18 +67,38 @@ def update_arc(arc_id: uuid.UUID, arc_update: schemas.ArcUpdate, repo: ArcReposi
     repo.update(db_arc, title=arc_update.title)
 
 
-@app.post("/quests", status_code=status.HTTP_201_CREATED, response_model=schemas.Quest)
+@app.post("/arcs/{arc_id}/quests", status_code=status.HTTP_201_CREATED, response_model=schemas.Quest)
 def create_quest(
+    arc_id: uuid.UUID,
     quest: schemas.QuestCreate,
     arc_repo: ArcRepository = Depends(get_arc_repo),
     quest_repo: QuestRepository = Depends(get_quest_repo),
 ):
-    if not arc_repo.get(quest.arc_id):
-        raise HTTPException(status_code=404, detail=f"Arc {quest.arc_id} not found")
-    return quest_repo.create(title=quest.title, description=quest.description, arc_id=quest.arc_id)
+    if not arc_repo.get(arc_id):
+        raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
+    return quest_repo.create(title=quest.title, description=quest.description, arc_id=arc_id)
 
 
-@app.put("/quests/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.get("/arcs/{arc_id}/quests", status_code=status.HTTP_200_OK, response_model=list[schemas.Quest])
+def get_quests_by_arc(
+    arc_id: uuid.UUID,
+    arc_repo: ArcRepository = Depends(get_arc_repo),
+    quest_repo: QuestRepository = Depends(get_quest_repo),
+):
+    if not arc_repo.get(arc_id):
+        raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
+    return quest_repo.get_by_arc(arc_id)
+
+
+@app.get("/quests/{quest_id}", status_code=status.HTTP_200_OK, response_model=schemas.Quest)
+def get_quest(quest_id: uuid.UUID, repo: QuestRepository = Depends(get_quest_repo)):
+    db_quest = repo.get(quest_id)
+    if not db_quest:
+        raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
+    return db_quest
+
+
+@app.patch("/quests/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)
 def update_quest(
     quest_id: uuid.UUID,
     quest_update: schemas.QuestUpdate,
@@ -88,7 +108,9 @@ def update_quest(
     db_quest = quest_repo.get(quest_id)
     if not db_quest:
         raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
-    if not arc_repo.get(quest_update.arc_id):
+    if quest_update.title is None and quest_update.description is None and quest_update.arc_id is None:
+        raise HTTPException(status_code=400, detail="At least one field must be provided for update")
+    if quest_update.arc_id is not None and not arc_repo.get(quest_update.arc_id):
         raise HTTPException(status_code=404, detail=f"Arc {quest_update.arc_id} not found")
     quest_repo.update(
         db_quest, title=quest_update.title, description=quest_update.description, arc_id=quest_update.arc_id

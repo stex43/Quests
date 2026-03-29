@@ -10,13 +10,12 @@ ConstrainedText = Annotated[str, Field(min_length=1, max_length=1000)]
 class QuestCreate(BaseModel):
     title: ConstrainedStr
     description: ConstrainedText
-    arc_id: uuid.UUID
 
 
 class QuestUpdate(BaseModel):
-    title: ConstrainedStr
-    description: ConstrainedText
-    arc_id: uuid.UUID
+    title: ConstrainedStr | None = None
+    description: ConstrainedText | None = None
+    arc_id: uuid.UUID | None = None
 
 
 class Quest(BaseModel):
