@@ -13,6 +13,8 @@ class QuestCreate(BaseModel):
 
 
 class QuestUpdate(BaseModel):
+    # Fields default to None solely for omission detection via model_fields_set.
+    # Explicit null (e.g. {"title": null}) is rejected with 400 by the route handler.
     title: ConstrainedStr | None = None
     description: ConstrainedText | None = None
     arc_id: uuid.UUID | None = None
