@@ -85,7 +85,11 @@ def create_quest(
     if not arc_repo.get(arc_id):
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
     db_quest = quest_repo.create(title=quest.title, description=quest.description, arc_id=arc_id)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Target arc no longer exists.")
     db.refresh(db_quest)
     return db_quest
 
