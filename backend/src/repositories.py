@@ -13,8 +13,6 @@ class ArcRepository:
     def create(self, title: str) -> models.Arc:
         arc = models.Arc(title=title)
         self.db.add(arc)
-        self.db.commit()
-        self.db.refresh(arc)
         return arc
 
     def get_all(self) -> list[models.Arc]:
@@ -25,12 +23,9 @@ class ArcRepository:
 
     def update(self, arc: models.Arc, title: str) -> None:
         arc.title = title
-        self.db.commit()
-        self.db.refresh(arc)
 
     def delete(self, arc: models.Arc) -> None:
         self.db.delete(arc)
-        self.db.commit()
 
 
 class QuestRepository:
@@ -40,8 +35,6 @@ class QuestRepository:
     def create(self, title: str, description: str, arc_id: uuid.UUID) -> models.Quest:
         quest = models.Quest(title=title, description=description, arc_id=arc_id)
         self.db.add(quest)
-        self.db.commit()
-        self.db.refresh(quest)
         return quest
 
     def get(self, quest_id: uuid.UUID) -> models.Quest | None:
@@ -57,9 +50,6 @@ class QuestRepository:
             quest.description = description
         if arc_id is not None:
             quest.arc_id = arc_id
-        self.db.commit()
-        self.db.refresh(quest)
 
     def delete(self, quest: models.Quest) -> None:
         self.db.delete(quest)
-        self.db.commit()

@@ -28,7 +28,15 @@ Backend uses synchronous SQLAlchemy (not async) throughout — `database.py` has
 - No pagination on `GET /arcs` (noted with `# todo` comment in main.py).
 - `allow_credentials` not set in CORS middleware.
 - `Arc` model has no `description` field — appears intentional.
-- `QuestUpdate` requires all fields including `arc_id` — no partial update (PATCH) support.
 - IDs are generated in Python (`uuid.uuid4()`) rather than at the DB level.
-- `db.refresh()` added after `commit()` in `ArcRepository.create` and `QuestRepository.create` — fixed (2026-03-14). Placement is correct: post-commit, pre-return, on the just-created instance.
 - `GET /` root endpoint returns `{"Hello": "World"}` — dead scaffolding code.
+
+## Transaction management refactor (2026-03-29)
+- commit/refresh removed from all repo methods — repos only stage changes (add/delete/mutate ORM objects)
+- Handlers call `db.commit()` explicitly after every mutating operation
+- `db.refresh()` called only in `create_arc` and `create_quest` handlers, post-commit, before return
+- `update_quest` wraps `db.commit()` in `try/except IntegrityError` → `db.rollback()` + HTTPException 409
+- `DbSession = Annotated[Session, Depends(get_db)]` shared alias confirmed correct — both repo factories and handler `db:` param share one session per request
+- `QuestUpdate` now has all-optional fields with `| None = None` — partial PATCH support is live
+- `update_quest` null guards added for `title` and `description` (2026-03-29): explicit `{"title": null}` / `{"description": null}` now return 400, mirroring the existing `arc_id` null guard
+- `QuestRepository.update` uses `if field is not None` guards — so unset fields (default `None`) are silently skipped, which is the correct partial-PATCH behavior; the handler null guards intercept the case where a caller explicitly sends `null`

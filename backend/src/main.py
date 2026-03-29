@@ -6,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src import schemas
@@ -49,8 +50,11 @@ def read_root():
 
 
 @app.post("/arcs", status_code=status.HTTP_201_CREATED, response_model=schemas.Arc)
-def create_arc(arc: schemas.ArcCreate, repo: ArcRepository = Depends(get_arc_repo)):
-    return repo.create(title=arc.title)
+def create_arc(arc: schemas.ArcCreate, db: DbSession, repo: ArcRepository = Depends(get_arc_repo)):
+    db_arc = repo.create(title=arc.title)
+    db.commit()
+    db.refresh(db_arc)
+    return db_arc
 
 
 # todo: paging
@@ -60,23 +64,30 @@ def get_arcs(repo: ArcRepository = Depends(get_arc_repo)):
 
 
 @app.put("/arcs/{arc_id}", status_code=status.HTTP_204_NO_CONTENT)
-def update_arc(arc_id: uuid.UUID, arc_update: schemas.ArcUpdate, repo: ArcRepository = Depends(get_arc_repo)):
+def update_arc(
+    arc_id: uuid.UUID, arc_update: schemas.ArcUpdate, db: DbSession, repo: ArcRepository = Depends(get_arc_repo)
+):
     db_arc = repo.get(arc_id)
     if not db_arc:
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
     repo.update(db_arc, title=arc_update.title)
+    db.commit()
 
 
 @app.post("/arcs/{arc_id}/quests", status_code=status.HTTP_201_CREATED, response_model=schemas.Quest)
 def create_quest(
     arc_id: uuid.UUID,
     quest: schemas.QuestCreate,
+    db: DbSession,
     arc_repo: ArcRepository = Depends(get_arc_repo),
     quest_repo: QuestRepository = Depends(get_quest_repo),
 ):
     if not arc_repo.get(arc_id):
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
-    return quest_repo.create(title=quest.title, description=quest.description, arc_id=arc_id)
+    db_quest = quest_repo.create(title=quest.title, description=quest.description, arc_id=arc_id)
+    db.commit()
+    db.refresh(db_quest)
+    return db_quest
 
 
 @app.get("/arcs/{arc_id}/quests", status_code=status.HTTP_200_OK, response_model=list[schemas.Quest])
@@ -102,32 +113,47 @@ def get_quest(quest_id: uuid.UUID, repo: QuestRepository = Depends(get_quest_rep
 def update_quest(
     quest_id: uuid.UUID,
     quest_update: schemas.QuestUpdate,
+    db: DbSession,
     arc_repo: ArcRepository = Depends(get_arc_repo),
     quest_repo: QuestRepository = Depends(get_quest_repo),
 ):
     db_quest = quest_repo.get(quest_id)
     if not db_quest:
         raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
-    if quest_update.title is None and quest_update.description is None and quest_update.arc_id is None:
+    provided = quest_update.model_fields_set
+    if not provided:
         raise HTTPException(status_code=400, detail="At least one field must be provided for update")
+    if "title" in provided and quest_update.title is None:
+        raise HTTPException(status_code=400, detail="title cannot be set to null")
+    if "description" in provided and quest_update.description is None:
+        raise HTTPException(status_code=400, detail="description cannot be set to null")
+    if "arc_id" in provided and quest_update.arc_id is None:
+        raise HTTPException(status_code=400, detail="arc_id cannot be set to null")
     if quest_update.arc_id is not None and not arc_repo.get(quest_update.arc_id):
         raise HTTPException(status_code=404, detail=f"Arc {quest_update.arc_id} not found")
     quest_repo.update(
         db_quest, title=quest_update.title, description=quest_update.description, arc_id=quest_update.arc_id
     )
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Update failed due to a conflict.")
 
 
 @app.delete("/arcs/{arc_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_arc(arc_id: uuid.UUID, repo: ArcRepository = Depends(get_arc_repo)):
+def delete_arc(arc_id: uuid.UUID, db: DbSession, repo: ArcRepository = Depends(get_arc_repo)):
     db_arc = repo.get(arc_id)
     if not db_arc:
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
     repo.delete(db_arc)
+    db.commit()
 
 
 @app.delete("/quests/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_quest(quest_id: uuid.UUID, repo: QuestRepository = Depends(get_quest_repo)):
+def delete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepository = Depends(get_quest_repo)):
     db_quest = repo.get(quest_id)
     if not db_quest:
         raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
     repo.delete(db_quest)
+    db.commit()
