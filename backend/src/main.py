@@ -71,7 +71,11 @@ def update_arc(
     if not db_arc:
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
     repo.update(db_arc, title=arc_update.title)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Update failed due to a conflict.")
 
 
 @app.post("/arcs/{arc_id}/quests", status_code=status.HTTP_201_CREATED, response_model=schemas.Quest)
