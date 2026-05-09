@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createArc, createQuest, deleteArc, deleteQuest, getArcs, updateArc } from "./api";
+import {
+  createArc,
+  createQuest,
+  deleteArc,
+  deleteQuest,
+  getArcs,
+  updateArc,
+  updateQuest,
+} from "./api";
 import { ArcList } from "./components/ArcList";
 import { QuestDetail } from "./components/QuestDetail";
 import "./App.css";
@@ -112,6 +120,26 @@ export default function App() {
     [catchMutationError],
   );
 
+  const handleUpdateQuest = useCallback(
+    async (questId: string, title: string, description: string) => {
+      try {
+        await updateQuest(questId, title, description);
+        setArcs((prev) =>
+          prev.map((a) => ({
+            ...a,
+            quests: a.quests.map((q) => (q.id === questId ? { ...q, title, description } : q)),
+          })),
+        );
+        setSelectedQuest((sq) => (sq?.id === questId ? { ...sq, title, description } : sq));
+        setMutationError(null);
+      } catch (err) {
+        catchMutationError(err);
+        throw err;
+      }
+    },
+    [catchMutationError],
+  );
+
   const handleSelectQuest = useCallback((quest: Quest) => {
     setSelectedQuest(quest);
   }, []);
@@ -133,7 +161,7 @@ export default function App() {
         onDeleteQuest={handleDeleteQuest}
         onSelectQuest={handleSelectQuest}
       />
-      <QuestDetail quest={selectedQuest} />
+      <QuestDetail quest={selectedQuest} onUpdate={handleUpdateQuest} />
     </div>
   );
 }

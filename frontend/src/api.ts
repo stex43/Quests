@@ -55,6 +55,14 @@ export async function createQuest(title: string, arcId: string, description = ""
   return mapQuest(raw);
 }
 
+export async function updateQuest(id: string, title: string, description: string): Promise<void> {
+  await request(`/quests/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, description }),
+  });
+}
+
 export async function deleteQuest(id: string): Promise<void> {
   await request(`/quests/${id}`, { method: "DELETE" });
 }

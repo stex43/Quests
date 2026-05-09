@@ -32,6 +32,11 @@
   background: #f9fafb;
 }
 
+.complete-button:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
 .description-label {
   font-size: 16px;
   font-weight: 600;
@@ -53,4 +58,120 @@
 .quest-detail-empty-state {
   color: #9ca3af;
   margin-top: 40px;
+}
+
+.quest-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.quest-detail-title-row .quest-detail-title {
+  margin: 0;
+}
+
+.quest-detail-edit-header {
+  margin-bottom: 16px;
+}
+
+.quest-detail-title-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 22px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #111827;
+}
+
+.quest-detail-title-input:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  background: #e5e7eb;
+}
+
+.quest-detail-description-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #374151;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.quest-detail-description-input:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  background: #e5e7eb;
+}
+
+.quest-detail-title-input:disabled,
+.quest-detail-description-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quest-detail-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quest-detail-save-button {
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.quest-detail-save-button:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.quest-detail-save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quest-detail-save-button:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+.quest-detail-cancel-button {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.quest-detail-cancel-button:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.quest-detail-cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quest-detail-cancel-button:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
 }
