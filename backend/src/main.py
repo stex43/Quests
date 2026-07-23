@@ -1,17 +1,14 @@
 import uuid
-from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from src import schemas
-from src.database import get_db
-from src.repositories import ArcRepository, QuestRepository
+from src.dependencies import ArcRepo, DbSession, QuestRepo
 from src.settings import settings
 
 app = FastAPI()
@@ -29,28 +26,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(status_code=400, content={"detail": jsonable_encoder(exc.errors())})
 
 
-# DbSession is a shared Annotated alias. Both get_arc_repo and get_quest_repo use it,
-# so FastAPI resolves get_db once per request and both repos share the same session.
-# Do NOT inline Annotated[Session, Depends(get_db)] separately in each factory —
-# that would create two independent sessions within the same request.
-DbSession = Annotated[Session, Depends(get_db)]
-
-
-def get_arc_repo(db: DbSession) -> ArcRepository:
-    return ArcRepository(db)
-
-
-def get_quest_repo(db: DbSession) -> QuestRepository:
-    return QuestRepository(db)
-
-
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
 
 @app.post("/arcs", status_code=status.HTTP_201_CREATED, response_model=schemas.Arc)
-def create_arc(arc: schemas.ArcCreate, db: DbSession, repo: ArcRepository = Depends(get_arc_repo)):
+def create_arc(arc: schemas.ArcCreate, db: DbSession, repo: ArcRepo):
     db_arc = repo.create(title=arc.title)
     db.commit()
     db.refresh(db_arc)
@@ -59,14 +41,12 @@ def create_arc(arc: schemas.ArcCreate, db: DbSession, repo: ArcRepository = Depe
 
 # todo: paging
 @app.get("/arcs", status_code=status.HTTP_200_OK, response_model=list[schemas.ArcExtended])
-def get_arcs(repo: ArcRepository = Depends(get_arc_repo)):
+def get_arcs(repo: ArcRepo):
     return repo.get_all()
 
 
 @app.put("/arcs/{arc_id}", status_code=status.HTTP_204_NO_CONTENT)
-def update_arc(
-    arc_id: uuid.UUID, arc_update: schemas.ArcUpdate, db: DbSession, repo: ArcRepository = Depends(get_arc_repo)
-):
+def update_arc(arc_id: uuid.UUID, arc_update: schemas.ArcUpdate, db: DbSession, repo: ArcRepo):
     db_arc = repo.get(arc_id)
     if not db_arc:
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
@@ -83,8 +63,8 @@ def create_quest(
     arc_id: uuid.UUID,
     quest: schemas.QuestCreate,
     db: DbSession,
-    arc_repo: ArcRepository = Depends(get_arc_repo),
-    quest_repo: QuestRepository = Depends(get_quest_repo),
+    arc_repo: ArcRepo,
+    quest_repo: QuestRepo,
 ):
     if not arc_repo.get(arc_id):
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
@@ -101,8 +81,8 @@ def create_quest(
 @app.get("/arcs/{arc_id}/quests", status_code=status.HTTP_200_OK, response_model=list[schemas.Quest])
 def get_quests_by_arc(
     arc_id: uuid.UUID,
-    arc_repo: ArcRepository = Depends(get_arc_repo),
-    quest_repo: QuestRepository = Depends(get_quest_repo),
+    arc_repo: ArcRepo,
+    quest_repo: QuestRepo,
 ):
     if not arc_repo.get(arc_id):
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
@@ -110,7 +90,7 @@ def get_quests_by_arc(
 
 
 @app.get("/quests/{quest_id}", status_code=status.HTTP_200_OK, response_model=schemas.Quest)
-def get_quest(quest_id: uuid.UUID, repo: QuestRepository = Depends(get_quest_repo)):
+def get_quest(quest_id: uuid.UUID, repo: QuestRepo):
     db_quest = repo.get(quest_id)
     if not db_quest:
         raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
@@ -122,8 +102,8 @@ def update_quest(
     quest_id: uuid.UUID,
     quest_update: schemas.QuestUpdate,
     db: DbSession,
-    arc_repo: ArcRepository = Depends(get_arc_repo),
-    quest_repo: QuestRepository = Depends(get_quest_repo),
+    arc_repo: ArcRepo,
+    quest_repo: QuestRepo,
 ):
     db_quest = quest_repo.get(quest_id)
     if not db_quest:
@@ -150,7 +130,7 @@ def update_quest(
 
 
 @app.delete("/arcs/{arc_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_arc(arc_id: uuid.UUID, db: DbSession, repo: ArcRepository = Depends(get_arc_repo)):
+def delete_arc(arc_id: uuid.UUID, db: DbSession, repo: ArcRepo):
     db_arc = repo.get(arc_id)
     if not db_arc:
         raise HTTPException(status_code=404, detail=f"Arc {arc_id} not found")
@@ -159,7 +139,7 @@ def delete_arc(arc_id: uuid.UUID, db: DbSession, repo: ArcRepository = Depends(g
 
 
 @app.delete("/quests/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepository = Depends(get_quest_repo)):
+def delete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo):
     db_quest = repo.get(quest_id)
     if not db_quest:
         raise HTTPException(status_code=404, detail=f"Quest {quest_id} not found")
