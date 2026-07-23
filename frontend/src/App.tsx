@@ -1,148 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  createArc,
-  createQuest,
-  deleteArc,
-  deleteQuest,
-  getArcs,
-  updateArc,
-  updateQuest,
-} from "./api";
 import { ArcList } from "./components/ArcList";
 import { QuestDetail } from "./components/QuestDetail";
 import "./App.css";
-import type { Arc, Quest } from "./types";
+import { useArcs } from "./features/arcs/useArcs";
+import { useMutationError } from "./features/arcs/useMutationError";
+import { useQuests } from "./features/arcs/useQuests";
+import { useSelectedQuest } from "./features/arcs/useSelectedQuest";
 
 export default function App() {
-  const [arcs, setArcs] = useState<Arc[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [mutationError, setMutationError] = useState<string | null>(null);
-  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
-  const arcsRef = useRef(arcs);
-  useEffect(() => {
-    arcsRef.current = arcs;
-  }, [arcs]);
-
-  useEffect(() => {
-    getArcs()
-      .then(setArcs)
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  const catchMutationError = useCallback((err: unknown) => {
-    setMutationError(err instanceof Error ? err.message : String(err));
-  }, []);
-
-  const handleDismissError = useCallback(() => {
-    setMutationError(null);
-  }, []);
-
-  const handleCreateArc = useCallback(
-    async (title: string) => {
-      try {
-        const arc = await createArc(title);
-        setArcs((prev) => [arc, ...prev]);
-        setMutationError(null);
-      } catch (err) {
-        catchMutationError(err);
-        throw err;
-      }
-    },
-    [catchMutationError],
-  );
-
-  const handleUpdateArc = useCallback(
-    async (arcId: string, title: string) => {
-      try {
-        await updateArc(arcId, title);
-        setArcs((prev) => prev.map((a) => (a.id === arcId ? { ...a, title } : a)));
-        setMutationError(null);
-      } catch (err) {
-        catchMutationError(err);
-        throw err;
-      }
-    },
-    [catchMutationError],
-  );
-
-  const handleDeleteArc = useCallback(
-    async (arcId: string) => {
-      try {
-        const arc = arcsRef.current.find((a) => a.id === arcId);
-        await deleteArc(arcId);
-        setArcs((prev) => prev.filter((a) => a.id !== arcId));
-        setSelectedQuest((sq) => (arc?.quests.some((q) => q.id === sq?.id) ? null : sq));
-        setMutationError(null);
-      } catch (err) {
-        catchMutationError(err);
-        throw err;
-      }
-    },
-    [catchMutationError],
-  );
-
-  const handleCreateQuest = useCallback(
-    async (arcId: string, title: string) => {
-      try {
-        const quest = await createQuest(title, arcId);
-        setArcs((prev) =>
-          prev.map((a) => (a.id === arcId ? { ...a, quests: [...a.quests, quest] } : a)),
-        );
-        setMutationError(null);
-      } catch (err) {
-        catchMutationError(err);
-        throw err;
-      }
-    },
-    [catchMutationError],
-  );
-
-  const handleDeleteQuest = useCallback(
-    async (questId: string) => {
-      try {
-        await deleteQuest(questId);
-        setArcs((prev) =>
-          prev.map((a) => ({ ...a, quests: a.quests.filter((q) => q.id !== questId) })),
-        );
-        setSelectedQuest((sq) => (sq?.id === questId ? null : sq));
-        setMutationError(null);
-      } catch (err) {
-        catchMutationError(err);
-        throw err;
-      }
-    },
-    [catchMutationError],
-  );
-
-  const handleUpdateQuest = useCallback(
-    async (questId: string, title: string, description: string) => {
-      try {
-        await updateQuest(questId, title, description);
-        setArcs((prev) =>
-          prev.map((a) => ({
-            ...a,
-            quests: a.quests.map((q) => (q.id === questId ? { ...q, title, description } : q)),
-          })),
-        );
-        setSelectedQuest((sq) => (sq?.id === questId ? { ...sq, title, description } : sq));
-        setMutationError(null);
-      } catch (err) {
-        catchMutationError(err);
-        throw err;
-      }
-    },
-    [catchMutationError],
-  );
-
-  const handleSelectQuest = useCallback((quest: Quest) => {
-    setSelectedQuest(quest);
-  }, []);
+  // A single shared mutation-error state is used for both arc and quest
+  // mutations, so any successful mutation clears a pending error from either.
+  const { mutationError, runMutation, dismissError } = useMutationError();
+  const {
+    arcs,
+    setArcs,
+    loading,
+    error,
+    create: createArc,
+    update: updateArc,
+    remove: removeArc,
+  } = useArcs(runMutation);
+  const {
+    create: createQuest,
+    update: updateQuest,
+    remove: removeQuest,
+  } = useQuests(setArcs, runMutation);
+  const { selectedQuest, select } = useSelectedQuest(arcs);
 
   if (loading) return <p className="app-status-text">Loading...</p>;
   if (error) return <p className="app-status-text">Error: {error}</p>;
@@ -153,15 +35,15 @@ export default function App() {
         arcs={arcs}
         selectedQuestId={selectedQuest?.id ?? null}
         mutationError={mutationError}
-        onDismissError={handleDismissError}
-        onCreateArc={handleCreateArc}
-        onUpdateArc={handleUpdateArc}
-        onDeleteArc={handleDeleteArc}
-        onCreateQuest={handleCreateQuest}
-        onDeleteQuest={handleDeleteQuest}
-        onSelectQuest={handleSelectQuest}
+        onDismissError={dismissError}
+        onCreateArc={createArc}
+        onUpdateArc={updateArc}
+        onDeleteArc={removeArc}
+        onCreateQuest={createQuest}
+        onDeleteQuest={removeQuest}
+        onSelectQuest={select}
       />
-      <QuestDetail quest={selectedQuest} onUpdate={handleUpdateQuest} />
+      <QuestDetail quest={selectedQuest} onUpdate={updateQuest} />
     </div>
   );
 }
