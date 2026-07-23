@@ -7,6 +7,12 @@ ConstrainedStr = Annotated[str, Field(min_length=1, max_length=100)]
 ConstrainedText = Annotated[str, Field(min_length=1, max_length=1000)]
 
 
+class ErrorResponse(BaseModel):
+    error: str
+    message: str
+    details: dict | None = None
+
+
 class QuestCreate(BaseModel):
     title: ConstrainedStr
     description: ConstrainedText
