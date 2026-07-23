@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Request
-from fastapi.encoders import jsonable_encoder
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
+from src import exception_handlers
+from src.exceptions import ConflictError, DomainError, DomainValidationError, NotFoundError
 from src.routers import arcs, quests
 from src.settings import settings
 
@@ -16,10 +16,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    return JSONResponse(status_code=400, content={"detail": jsonable_encoder(exc.errors())})
+app.add_exception_handler(DomainError, exception_handlers.domain_error_handler)
+app.add_exception_handler(NotFoundError, exception_handlers.not_found_handler)
+app.add_exception_handler(ConflictError, exception_handlers.conflict_handler)
+app.add_exception_handler(DomainValidationError, exception_handlers.validation_error_handler)
+app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_handler)
+app.add_exception_handler(Exception, exception_handlers.unhandled_exception_handler)
 
 
 @app.get("/")
