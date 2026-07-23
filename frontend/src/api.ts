@@ -47,10 +47,10 @@ export async function deleteArc(id: string): Promise<void> {
 }
 
 export async function createQuest(title: string, arcId: string, description = ""): Promise<Quest> {
-  const raw = await request("/quests", {
+  const raw = await request(`/arcs/${arcId}/quests`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, description, arc_id: arcId }),
+    body: JSON.stringify({ title, description }),
   }).then((r) => r.json() as Promise<RawQuest>);
   return mapQuest(raw);
 }

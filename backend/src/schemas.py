@@ -15,14 +15,14 @@ class ErrorResponse(BaseModel):
 
 class QuestCreate(BaseModel):
     title: ConstrainedStr
-    description: ConstrainedText
+    description: Annotated[str, Field(max_length=1000)] = ""
 
 
 class QuestUpdate(BaseModel):
     # Fields default to None solely for omission detection via model_fields_set.
     # Explicit null (e.g. {"title": null}) is rejected with 400 by the route handler.
     title: ConstrainedStr | None = None
-    description: ConstrainedText | None = None
+    description: Annotated[str, Field(max_length=1000)] | None = None
     arc_id: uuid.UUID | None = None
 
 

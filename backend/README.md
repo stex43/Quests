@@ -43,4 +43,12 @@ Build and start the backend service using Docker Compose:
 docker compose up --build
 ```
 
-The API will be available at <http://localhost:8000/>. Code changes in `backend/app` are mounted into the container, so the auto-reload server will pick them up without rebuilding the image.
+The API will be available at <http://localhost:8000/>.
+
+> **Note:** the backend image copies the source at build time (`COPY src ./src`) and runs `uvicorn` without `--reload`, so the container does **not** hot-reload. After changing anything under `backend/src`, rebuild to pick up the change:
+>
+> ```bash
+> docker compose up -d --build backend
+> ```
+>
+> For live reload during development, run the server directly instead (`uvicorn src.main:app --reload`) rather than through Docker Compose.
