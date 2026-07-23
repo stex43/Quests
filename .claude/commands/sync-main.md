@@ -1,9 +1,9 @@
 # sync-main
 
-Update `main`, switch to it, and delete the branch you were working on.
+Update `main`, switch to it, and delete the branch you were working on (locally and on the remote).
 
 **Usage:**
-- `/sync-main` — switch to `main`, pull latest, delete the branch you came from
+- `/sync-main` — switch to `main`, pull latest, delete the branch you came from (local + remote)
 - `/sync-main old-feature-branch` — same, but delete the named branch instead of the current one
 
 The branch to delete (if any) is: $ARGUMENTS
@@ -56,9 +56,27 @@ git branch -d <working-branch>
 - If it succeeds, done.
 - If it fails because the branch is not fully merged into `main`, report git's message and ask the user whether to force-delete with `git branch -D <working-branch>`. Do NOT force-delete without explicit confirmation.
 
-### Step 6 — Report
+### Step 6 — Delete the remote branch
+
+Check whether the remote branch still exists:
+```
+git ls-remote --heads origin <working-branch>
+```
+
+If it exists, delete it:
+```
+git push origin --delete <working-branch>
+```
+
+Only delete the remote branch when it is safe:
+- The PR was **MERGED** (Step 2), or
+- the safe local delete in Step 5 succeeded (which means git confirmed it was merged).
+
+If the branch was **not** merged, do NOT delete the remote branch without explicit user confirmation. If the remote branch does not exist (already deleted, e.g. by GitHub on merge), note that and move on.
+
+### Step 7 — Report
 
 Tell the user:
 - which commit `main` is now at (`git log -1 --oneline`),
-- that the working branch was deleted (or why it wasn't),
-- if the remote branch `origin/<working-branch>` still exists, mention it and offer to delete it with `git push origin --delete <working-branch>`.
+- that the working branch was deleted locally (or why it wasn't),
+- that the remote branch was deleted (or why it wasn't).
