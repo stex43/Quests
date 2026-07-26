@@ -40,3 +40,14 @@ Backend uses synchronous SQLAlchemy (not async) throughout — `database.py` has
 - `QuestUpdate` now has all-optional fields with `| None = None` — partial PATCH support is live
 - `update_quest` null guards added for `title` and `description` (2026-03-29): explicit `{"title": null}` / `{"description": null}` now return 400, mirroring the existing `arc_id` null guard
 - `QuestRepository.update` uses `if field is not None` guards — so unset fields (default `None`) are silently skipped, which is the correct partial-PATCH behavior; the handler null guards intercept the case where a caller explicitly sends `null`
+
+## `completed` bool field added to Quest (2026-07-26)
+- `models.Quest` has `completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)` — Python-side default only; no `server_default` in model, BUT migration uses `server_default=sa.false()` then strips it via `alter_column` — existing rows handled safely
+- `schemas.Quest` response schema includes `completed: bool` — correct; flows through `ArcExtended` via `list[Quest]`
+- `schemas.QuestCreate` and `schemas.QuestUpdate` deliberately do NOT include `completed` — by design
+- `QuestRepository.complete()` / `uncomplete()` set `quest.completed = True/False`; called only by action endpoints
+- `POST /quests/{id}/complete` and `POST /quests/{id}/uncomplete` exist — no idempotency guard; both always write to DB and return 204 even if state is unchanged. Reviewed 2026-07-26, flagged as medium.
+- Route ordering: `/{quest_id}/complete` and `/{quest_id}/uncomplete` are safe from UUID collision because FastAPI matches literal path segments before UUID path params on the same prefix
+- Naming: `uncomplete` is a real English word (to undo completion) but non-standard in APIs; tradeoff documented
+- `completed` is correctly excluded from PATCH entirely; IntegrityError guard absent from `/complete` and `/uncomplete` — intentional, no FK/unique constraint can fire on a boolean mutation
+- PATCH null-guard coverage is complete and consistent for all three `QuestUpdate` fields

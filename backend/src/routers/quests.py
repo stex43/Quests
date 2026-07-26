@@ -41,7 +41,10 @@ def update_quest(
     if quest_update.arc_id is not None and not arc_repo.get(quest_update.arc_id):
         raise NotFoundError("Arc", quest_update.arc_id)
     quest_repo.update(
-        db_quest, title=quest_update.title, description=quest_update.description, arc_id=quest_update.arc_id
+        db_quest,
+        title=quest_update.title,
+        description=quest_update.description,
+        arc_id=quest_update.arc_id,
     )
     try:
         db.commit()
@@ -49,6 +52,26 @@ def update_quest(
         # Roll back the failed transaction before raising; get_db's own rollback on exception is then a no-op.
         db.rollback()
         raise ConflictError("Update failed due to a conflict.")
+
+
+@router.post("/{quest_id}/complete", status_code=status.HTTP_204_NO_CONTENT)
+def complete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo):
+    # Idempotent by design: calling this on an already-completed quest is a no-op.
+    db_quest = repo.get(quest_id)
+    if not db_quest:
+        raise NotFoundError("Quest", quest_id)
+    repo.complete(db_quest)
+    db.commit()
+
+
+@router.post("/{quest_id}/uncomplete", status_code=status.HTTP_204_NO_CONTENT)
+def uncomplete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo):
+    # Idempotent by design: calling this on an already-incomplete quest is a no-op.
+    db_quest = repo.get(quest_id)
+    if not db_quest:
+        raise NotFoundError("Quest", quest_id)
+    repo.uncomplete(db_quest)
+    db.commit()
 
 
 @router.delete("/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)
