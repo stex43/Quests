@@ -126,7 +126,8 @@ Split-screen layout with a left navigation panel (300px fixed) and right detail 
 
 - For any coding, editing, or fixing tasks → delegate to the `coder` subagent
 - When asked to review code → delegate to the `reviewer` subagent
-- Never run the reviewer automatically — only when the user explicitly asks
+- Run the reviewer automatically when it is obvious the user would want it (e.g. after completing a feature or a set of changes); otherwise ask first
+- After a review: if all issues are clear-cut and the fix is unambiguous, apply fixes automatically; if any issue requires a judgment call or the right approach is unclear, present the findings and ask before proceeding
 
 ## Code Style
 
