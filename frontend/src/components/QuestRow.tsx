@@ -8,9 +8,16 @@ interface Props {
   isSelected: boolean;
   onSelect: (quest: Quest) => void;
   onDelete: (questId: string) => Promise<void>;
+  onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
 }
 
-export const QuestRow = memo(function QuestRow({ quest, isSelected, onSelect, onDelete }: Props) {
+export const QuestRow = memo(function QuestRow({
+  quest,
+  isSelected,
+  onSelect,
+  onDelete,
+  onToggleComplete,
+}: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleDelete() {
@@ -33,7 +40,29 @@ export const QuestRow = memo(function QuestRow({ quest, isSelected, onSelect, on
           onSelect(quest);
         }}
       >
-        <span className="quest-title">{quest.title}</span>
+        <span className="quest-title" data-completed={quest.completed}>
+          {quest.title}
+        </span>
+      </button>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={quest.completed}
+        aria-label={quest.completed ? "Mark quest incomplete" : "Mark quest complete"}
+        className="quest-complete-checkbox"
+        onClick={() => void onToggleComplete(quest.id, quest.completed)}
+      >
+        {quest.completed && (
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path
+              d="M1.5 5L4 7.5L8.5 2.5"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
       </button>
       <button
         type="button"

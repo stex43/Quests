@@ -42,3 +42,48 @@
 .quest-row[data-selected="true"] .quest-title {
   color: #1d4ed8;
 }
+
+.quest-title[data-completed="true"] {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.quest-row[data-selected="true"] .quest-title[data-completed="true"] {
+  color: #1d4ed8;
+}
+
+.quest-complete-checkbox {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 1.5px solid #d1d5db;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
+}
+
+.quest-complete-checkbox[aria-checked="true"] {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.quest-complete-checkbox:hover {
+  border-color: #4f46e5;
+}
+
+.quest-complete-checkbox:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+.quest-complete-checkbox:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

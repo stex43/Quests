@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -22,5 +22,6 @@ class Quest(Base):
     arc_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("arcs.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
+    completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     arc: Mapped[Arc] = relationship(back_populates="quests", lazy="raise")

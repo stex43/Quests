@@ -30,7 +30,8 @@ export function useSelectedQuest(arcs: Arc[]) {
       // if Quest gains a new field, otherwise selection can go stale.
       found.title !== selectedQuest.title ||
       found.description !== selectedQuest.description ||
-      found.arcId !== selectedQuest.arcId
+      found.arcId !== selectedQuest.arcId ||
+      found.completed !== selectedQuest.completed
     ) {
       reconciled = found;
     }

@@ -13,6 +13,7 @@ interface Props {
   onDelete: (arcId: string) => Promise<void>;
   onSelectQuest: (quest: Quest) => void;
   onDeleteQuest: (questId: string) => Promise<void>;
+  onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
   onCreateQuest: (arcId: string, title: string) => Promise<void>;
 }
 
@@ -25,6 +26,7 @@ export const ArcCard = memo(function ArcCard({
   onDelete,
   onSelectQuest,
   onDeleteQuest,
+  onToggleComplete,
   onCreateQuest,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
@@ -182,6 +184,7 @@ export const ArcCard = memo(function ArcCard({
               isSelected={selectedQuestId === quest.id}
               onSelect={onSelectQuest}
               onDelete={onDeleteQuest}
+              onToggleComplete={onToggleComplete}
             />
           ))}
 

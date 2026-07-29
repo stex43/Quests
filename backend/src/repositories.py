@@ -52,5 +52,11 @@ class QuestRepository:
         if arc_id is not None:
             quest.arc_id = arc_id
 
+    def complete(self, quest: models.Quest) -> None:
+        quest.completed = True
+
+    def uncomplete(self, quest: models.Quest) -> None:
+        quest.completed = False
+
     def delete(self, quest: models.Quest) -> None:
         self.db.delete(quest)

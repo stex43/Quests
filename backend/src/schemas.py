@@ -33,6 +33,7 @@ class Quest(BaseModel):
     title: str
     description: str
     arc_id: uuid.UUID
+    completed: bool
 
 
 class ArcCreate(BaseModel):

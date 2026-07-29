@@ -66,3 +66,11 @@ export async function updateQuest(id: string, title: string, description: string
 export async function deleteQuest(id: string): Promise<void> {
   await request(`/quests/${id}`, { method: "DELETE" });
 }
+
+export async function completeQuest(id: string): Promise<void> {
+  await request(`/quests/${id}/complete`, { method: "POST" });
+}
+
+export async function uncompleteQuest(id: string): Promise<void> {
+  await request(`/quests/${id}/uncomplete`, { method: "POST" });
+}

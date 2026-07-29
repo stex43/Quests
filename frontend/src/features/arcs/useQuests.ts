@@ -1,6 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type React from "react";
-import { createQuest, deleteQuest, updateQuest } from "../../api";
+import { completeQuest, createQuest, deleteQuest, uncompleteQuest, updateQuest } from "../../api";
 import type { Arc } from "../../types";
 import type { RunMutation } from "./useMutationError";
 
@@ -8,6 +8,8 @@ export function useQuests(
   setArcs: React.Dispatch<React.SetStateAction<Arc[]>>,
   runMutation: RunMutation,
 ) {
+  const toggleInFlightRef = useRef<Set<string>>(new Set());
+
   const create = useCallback(
     (arcId: string, title: string) =>
       runMutation(async () => {
@@ -44,5 +46,35 @@ export function useQuests(
     [runMutation, setArcs],
   );
 
-  return { create, update, remove };
+  const toggleComplete = useCallback(
+    (questId: string, completed: boolean) => {
+      if (toggleInFlightRef.current.has(questId)) return Promise.resolve();
+      return runMutation(async () => {
+        toggleInFlightRef.current.add(questId);
+        setArcs((prev) =>
+          prev.map((a) => ({
+            ...a,
+            quests: a.quests.map((q) => (q.id === questId ? { ...q, completed: !completed } : q)),
+          })),
+        );
+        try {
+          if (completed) await uncompleteQuest(questId);
+          else await completeQuest(questId);
+        } catch (e) {
+          setArcs((prev) =>
+            prev.map((a) => ({
+              ...a,
+              quests: a.quests.map((q) => (q.id === questId ? { ...q, completed } : q)),
+            })),
+          );
+          throw e;
+        } finally {
+          toggleInFlightRef.current.delete(questId);
+        }
+      });
+    },
+    [runMutation, setArcs],
+  );
+
+  return { create, update, remove, toggleComplete };
 }

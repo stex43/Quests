@@ -37,6 +37,21 @@
   outline-offset: 2px;
 }
 
+.complete-button--done {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.complete-button--done:hover {
+  background: #dcfce7;
+}
+
+.complete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .description-label {
   font-size: 16px;
   font-weight: 600;
