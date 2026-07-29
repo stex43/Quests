@@ -6,13 +6,15 @@ import "./QuestDetail.css";
 interface Props {
   quest: Quest | null;
   onUpdate: (questId: string, title: string, description: string) => Promise<void>;
+  onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
 }
 
-export const QuestDetail = memo(function QuestDetail({ quest, onUpdate }: Props) {
+export const QuestDetail = memo(function QuestDetail({ quest, onUpdate, onToggleComplete }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const commitInFlightRef = useRef(false);
   const prevQuestIdRef = useRef<string | null>(null);
@@ -20,6 +22,7 @@ export const QuestDetail = memo(function QuestDetail({ quest, onUpdate }: Props)
   useEffect(() => {
     if (quest?.id !== prevQuestIdRef.current) {
       setIsEditing(false);
+      setIsToggling(false);
       setEditTitle(quest?.title ?? "");
       setEditDescription(quest?.description ?? "");
       prevQuestIdRef.current = quest?.id ?? null;
@@ -121,12 +124,17 @@ export const QuestDetail = memo(function QuestDetail({ quest, onUpdate }: Props)
               <hr className="quest-detail-divider" />
               <button
                 type="button"
-                className="complete-button"
+                aria-pressed={quest.completed}
+                className={`complete-button${quest.completed ? " complete-button--done" : ""}`}
+                disabled={isToggling}
                 onClick={() => {
-                  console.log("Mark as complete", quest.id);
+                  setIsToggling(true);
+                  void onToggleComplete(quest.id, quest.completed).finally(() => {
+                    setIsToggling(false);
+                  });
                 }}
               >
-                Mark as Complete
+                {quest.completed ? "Mark as Incomplete" : "Mark as Complete"}
               </button>
             </>
           )}

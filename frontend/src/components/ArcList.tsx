@@ -13,6 +13,7 @@ interface Props {
   onDeleteArc: (arcId: string) => Promise<void>;
   onCreateQuest: (arcId: string, title: string) => Promise<void>;
   onDeleteQuest: (questId: string) => Promise<void>;
+  onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
   onSelectQuest: (quest: Quest) => void;
 }
 
@@ -26,6 +27,7 @@ export const ArcList = memo(function ArcList({
   onDeleteArc,
   onCreateQuest,
   onDeleteQuest,
+  onToggleComplete,
   onSelectQuest,
 }: Props) {
   const [expandedArcIds, setExpandedArcIds] = useState<Set<string>>(() => new Set());
@@ -126,6 +128,7 @@ export const ArcList = memo(function ArcList({
             onDelete={handleDeleteArc}
             onSelectQuest={onSelectQuest}
             onDeleteQuest={onDeleteQuest}
+            onToggleComplete={onToggleComplete}
             onCreateQuest={onCreateQuest}
           />
         );

@@ -3,6 +3,7 @@ export interface Quest {
   title: string;
   description: string;
   arcId: string;
+  completed: boolean;
 }
 
 export interface Arc {

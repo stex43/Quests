@@ -23,6 +23,7 @@ export default function App() {
     create: createQuest,
     update: updateQuest,
     remove: removeQuest,
+    toggleComplete,
   } = useQuests(setArcs, runMutation);
   const { selectedQuest, select } = useSelectedQuest(arcs);
 
@@ -41,9 +42,10 @@ export default function App() {
         onDeleteArc={removeArc}
         onCreateQuest={createQuest}
         onDeleteQuest={removeQuest}
+        onToggleComplete={toggleComplete}
         onSelectQuest={select}
       />
-      <QuestDetail quest={selectedQuest} onUpdate={updateQuest} />
+      <QuestDetail quest={selectedQuest} onUpdate={updateQuest} onToggleComplete={toggleComplete} />
     </div>
   );
 }
