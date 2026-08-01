@@ -1,9 +1,82 @@
-.app-container {
-  display: flex;
+.app-shell {
   height: 100vh;
+  box-sizing: border-box;
   margin: 0;
+  padding: 36px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background: radial-gradient(ellipse at 50% -10%, #242119 0%, #14120f 60%);
+  color: #2b2d4a;
+  font-family: "EB Garamond", serif;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 16px;
+  border-bottom: 2px solid #5f594a;
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.app-header-title {
+  font-family: "Cinzel Decorative", serif;
+  font-weight: 900;
+  font-size: 34px;
+  color: #b8ad8e;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.app-header-subtitle {
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-size: 16px;
+  color: #6d7590;
+}
+
+.app-header-nav {
+  display: flex;
+  gap: 36px;
+}
+
+.app-nav-tab {
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #565d78;
+  padding-bottom: 10px;
+  border-bottom: 2px solid transparent;
+  user-select: none;
+}
+
+.app-nav-tab--active {
+  color: #b8ad8e;
+  border-bottom-color: #b8ad8e;
+}
+
+.app-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 640px 1fr;
+  gap: 0;
+  min-height: 0;
 }
 
 .app-status-text {
-  padding: 24px;
+  padding: 40px 56px;
+  font-family: "EB Garamond", serif;
+  font-size: 18px;
+  color: #b8ad8e;
+  background: radial-gradient(ellipse at 50% -10%, #242119 0%, #14120f 60%);
+  min-height: 100vh;
+  margin: 0;
+  box-sizing: border-box;
 }

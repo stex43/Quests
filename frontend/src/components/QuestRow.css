@@ -1,22 +1,42 @@
 .quest-row {
   display: flex;
   align-items: center;
-  padding: 8px 14px;
-  gap: 8px;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 2px 0;
+  border-radius: 5px;
   background: transparent;
+  border: 1px solid transparent;
 }
 
 .quest-row:hover {
-  background: #f9fafb;
+  background: #00000010;
 }
 
 .quest-row[data-selected="true"] {
-  background: #eff6ff;
+  background: #5c4d6c;
+  border-radius: 40px 10px 35px 8px / 8px 30px 8px 35px;
+}
+
+.quest-row[data-selected="true"]:hover {
+  background: #574869;
+}
+
+.quest-accent {
+  width: 2px;
+  align-self: stretch;
+  flex: none;
+  background: #454b6e88;
+}
+
+.quest-row[data-selected="true"] .quest-accent {
+  background: #ffffff66;
 }
 
 .quest-select-area {
   display: flex;
   flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   cursor: pointer;
@@ -24,7 +44,6 @@
   text-align: left;
   color: inherit;
   font-family: inherit;
-  font-size: inherit;
 }
 
 .quest-select-area:focus-visible {
@@ -35,30 +54,31 @@
 
 .quest-title {
   flex: 1;
-  font-size: 14px;
-  color: #111827;
-}
-
-.quest-row[data-selected="true"] .quest-title {
-  color: #1d4ed8;
+  font-family: "EB Garamond", serif;
+  font-size: 18.5px;
+  color: #2b2d4a;
 }
 
 .quest-title[data-completed="true"] {
-  color: #9ca3af;
+  color: #3a5028;
   text-decoration: line-through;
 }
 
+.quest-row[data-selected="true"] .quest-title,
 .quest-row[data-selected="true"] .quest-title[data-completed="true"] {
-  color: #1d4ed8;
+  color: #ffffff;
 }
 
+/* Status circle doubles as the accessible complete toggle. Completed shows a
+   green ring with a check; active shows a faint always-visible ring (so the
+   toggle stays discoverable on touch/at-rest) that strengthens on hover/focus. */
 .quest-complete-checkbox {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  border: 1.5px solid #d1d5db;
-  border-radius: 4px;
-  background: #ffffff;
+  border: 2px solid #8a806655;
+  border-radius: 50%;
+  background: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -70,12 +90,17 @@
 }
 
 .quest-complete-checkbox[aria-checked="true"] {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #4f7a3a;
+  border-color: #3d5c2c;
 }
 
-.quest-complete-checkbox:hover {
-  border-color: #4f46e5;
+.quest-row:hover .quest-complete-checkbox[aria-checked="false"],
+.quest-complete-checkbox[aria-checked="false"]:focus-visible {
+  border-color: #6b6455;
+}
+
+.quest-row[data-selected="true"] .quest-complete-checkbox[aria-checked="false"] {
+  border-color: #ffffff66;
 }
 
 .quest-complete-checkbox:focus-visible {
@@ -86,4 +111,13 @@
 .quest-complete-checkbox:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.quest-row[data-selected="true"] .icon-button {
+  color: #e6e0ea;
+}
+
+.quest-row[data-selected="true"] .icon-button:hover {
+  color: #ffffff;
+  background: #ffffff22;
 }

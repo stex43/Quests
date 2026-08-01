@@ -1,16 +1,11 @@
 .arc-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  overflow: hidden;
+  margin: 16px 6px 0;
 }
 
 .arc-header {
   display: flex;
   align-items: center;
-  padding: 12px 14px;
-  gap: 8px;
-  background-color: #ffffff;
+  gap: 6px;
 }
 
 .arc-expand-area {
@@ -18,14 +13,27 @@
   align-items: center;
   gap: 8px;
   flex: 1;
-  background: none;
-  border: none;
+  min-width: 0;
   cursor: pointer;
-  padding: 0;
   text-align: left;
-  color: inherit;
-  font-family: inherit;
-  font-size: inherit;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 60px 12px 55px 8px / 10px 45px 8px 50px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #c6c8ccaa 6%,
+    #c6c8cc 14%,
+    #c6c8cc 50%,
+    #c6c8ccaa 72%,
+    transparent 100%
+  );
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: #454b6e;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 0 #e8e2d2;
   user-select: none;
 }
 
@@ -33,91 +41,97 @@
   flex: 0; /* collapse to chevron-only width when editing */
 }
 
-.arc-expand-area:hover .arc-chevron {
-  color: #374151;
-}
-
 .arc-expand-area:focus-visible {
   outline: 2px solid #4f46e5;
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
 .arc-chevron {
+  display: inline-block;
   font-size: 12px;
-  color: #6b7280;
-  width: 16px;
+  color: #454b6e;
   flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.arc-chevron--expanded {
+  transform: rotate(90deg);
 }
 
 .arc-title {
-  font-weight: 600;
-  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arc-title-input {
   flex: 1;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 15px;
+  background: #efe9db;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 16px;
   font-weight: 600;
-  font-family: inherit;
-  color: #111827;
+  font-family: "Cinzel", serif;
+  color: #2b2d4a;
 }
 
 .arc-title-input:focus-visible {
-  background: #e5e7eb;
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
 }
 
 .arc-title-input--error {
-  outline: 2px solid #ef4444;
+  outline: 2px solid #b0553f;
 }
 
 .arc-title-input--error:focus-visible {
-  outline: 2px solid #ef4444;
+  outline: 2px solid #b0553f;
   outline-offset: 2px;
 }
 
 .arc-title-error {
-  font-size: 12px;
-  color: #ef4444;
+  font-size: 13px;
+  color: #b0553f;
   white-space: nowrap;
 }
 
 .quest-list {
-  border-top: 1px solid #e5e7eb;
-  padding: 4px 0;
+  padding: 2px 0 0;
 }
 
 .new-quest-row {
   display: flex;
   gap: 8px;
-  padding: 8px 14px;
-  border-top: 1px solid #e5e7eb;
+  padding: 6px 6px 4px;
 }
 
 .new-quest-input {
   flex: 1;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 8px;
+  background: #efe9db;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
   padding: 8px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  color: #111827;
+  font-size: 15px;
+  font-family: "EB Garamond", serif;
+  color: #2b2d4a;
+}
+
+.new-quest-input::placeholder {
+  color: #9a9078;
+  font-style: italic;
 }
 
 .new-quest-input:focus-visible {
-  background: #e5e7eb;
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
 }
 
 .small-add-button {
-  background: #ffffff;
-  color: #111827;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background: #cfc7b2;
+  color: #2b2d4a;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
   width: 34px;
   height: 34px;
   font-size: 18px;
@@ -129,5 +143,10 @@
 }
 
 .small-add-button:hover {
-  background: #f9fafb;
+  background: #c2b99f;
+}
+
+.small-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

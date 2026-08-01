@@ -19,6 +19,7 @@ export const QuestRow = memo(function QuestRow({
   onToggleComplete,
 }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -31,8 +32,20 @@ export const QuestRow = memo(function QuestRow({
     }
   }
 
+  async function handleToggle() {
+    setIsToggling(true);
+    try {
+      await onToggleComplete(quest.id, quest.completed);
+    } catch {
+      // error displayed by parent via mutationError
+    } finally {
+      setIsToggling(false);
+    }
+  }
+
   return (
     <div className="quest-row" data-selected={isSelected}>
+      <span className="quest-accent" aria-hidden="true" />
       <button
         type="button"
         className="quest-select-area"
@@ -50,10 +63,11 @@ export const QuestRow = memo(function QuestRow({
         aria-checked={quest.completed}
         aria-label={quest.completed ? "Mark quest incomplete" : "Mark quest complete"}
         className="quest-complete-checkbox"
-        onClick={() => void onToggleComplete(quest.id, quest.completed)}
+        disabled={isToggling}
+        onClick={() => void handleToggle()}
       >
         {quest.completed && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true">
             <path
               d="M1.5 5L4 7.5L8.5 2.5"
               stroke="white"

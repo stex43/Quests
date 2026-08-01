@@ -4,10 +4,11 @@ button {
 }
 
 body {
-  font-family: Inter, system-ui, sans-serif;
-  font-size: 14px;
-  color: #111827;
+  font-family: "EB Garamond", serif;
+  font-size: 15px;
+  color: #2b2d4a;
   margin: 0;
+  background: #14120f;
 }
 
 :focus-visible {
@@ -20,7 +21,7 @@ body {
   border: none;
   cursor: pointer;
   padding: 4px;
-  color: #9ca3af;
+  color: #6e6858;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -29,6 +30,11 @@ body {
 }
 
 .icon-button:hover {
-  color: #111827;
-  background: #f3f4f6;
+  color: #2b2d4a;
+  background: #00000012;
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

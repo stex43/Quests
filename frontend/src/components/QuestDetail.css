@@ -1,35 +1,101 @@
 .quest-detail-panel {
-  flex: 1;
-  padding: 32px 40px;
+  min-height: 0;
   overflow-y: auto;
-  background-color: #ffffff;
+  position: relative;
+  padding: 34px 44px;
+  background: linear-gradient(180deg, #e2dcc8, #d8d0bb);
+  border: 3px solid #5f594a;
+  border-left: 1px solid #5f594a99;
+  border-radius: 0 6px 6px 0;
+  box-shadow:
+    inset 0 0 0 1px #8a806655,
+    0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.quest-detail-frame {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  border: 1px solid #454b6e88;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* Keep real content above the decorative inner frame. */
+.quest-detail-panel > *:not(.quest-detail-frame) {
+  position: relative;
+  z-index: 1;
+}
+
+.quest-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .quest-detail-title {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
 }
 
-.quest-detail-divider {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 0 0 20px 0;
+.quest-detail-dropcap {
+  font-family: "Cinzel Decorative", serif;
+  font-weight: 900;
+  font-size: 44px;
+  color: #8a2f22;
+  line-height: 1;
+}
+
+.quest-detail-title-rest {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 30px;
+  color: #2b2d4a;
+  letter-spacing: 0.5px;
+}
+
+.quest-detail-meta {
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #565d78;
+  margin: 0 0 22px 60px;
+}
+
+.quest-detail-reminder {
+  background: #dce9d3;
+  border: 1px solid #8ba374;
+  border-radius: 5px;
+  padding: 14px 18px;
+  margin-bottom: 26px;
+  font-family: "EB Garamond", serif;
+  font-size: 15.5px;
+  color: #3d4a2f;
+  line-height: 1.5;
 }
 
 .complete-button {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 500;
+  background: #e6e0cf;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
+  padding: 9px 18px;
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: #2b2d4a;
   cursor: pointer;
-  margin-bottom: 28px;
+  margin-bottom: 26px;
 }
 
 .complete-button:hover {
-  background: #f9fafb;
+  background: #ddd6c2;
 }
 
 .complete-button:focus-visible {
@@ -38,13 +104,13 @@
 }
 
 .complete-button--done {
-  background: #f0fdf4;
-  border-color: #86efac;
-  color: #166534;
+  background: #dce9d3;
+  border-color: #8ba374;
+  color: #3a5028;
 }
 
 .complete-button--done:hover {
-  background: #dcfce7;
+  background: #cfe0c3;
 }
 
 .complete-button:disabled {
@@ -52,38 +118,48 @@
   cursor: not-allowed;
 }
 
-.description-label {
-  font-size: 16px;
-  font-weight: 600;
-  color: #4f46e5;
-  margin: 0 0 12px 0;
-}
-
 .description-text {
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.6;
-  margin: 0;
+  font-family: "EB Garamond", serif;
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: #2b2d4a;
+  margin: 0 0 30px 0;
 }
 
 .empty-description {
-  color: #9ca3af;
+  color: #7c7460;
+}
+
+.quest-detail-subtasks-label {
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #454b6e;
+  letter-spacing: 1.5px;
+  margin-bottom: 14px;
+}
+
+.quest-detail-subtask-card {
+  background: #e6e0cf;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+.quest-detail-subtask-empty {
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-size: 15px;
+  color: #7c7460;
 }
 
 .quest-detail-empty-state {
-  color: #9ca3af;
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-size: 17px;
+  color: #7c7460;
   margin-top: 40px;
-}
-
-.quest-detail-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.quest-detail-title-row .quest-detail-title {
-  margin: 0;
 }
 
 .quest-detail-edit-header {
@@ -93,40 +169,38 @@
 .quest-detail-title-input {
   width: 100%;
   box-sizing: border-box;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 22px;
+  background: #efe9db;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-family: "Cinzel", serif;
+  font-size: 24px;
   font-weight: 700;
-  font-family: inherit;
-  color: #111827;
+  color: #2b2d4a;
 }
 
 .quest-detail-title-input:focus-visible {
   outline: 2px solid #4f46e5;
   outline-offset: 2px;
-  background: #e5e7eb;
 }
 
 .quest-detail-description-input {
   width: 100%;
   box-sizing: border-box;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  color: #374151;
-  line-height: 1.6;
+  background: #efe9db;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-family: "EB Garamond", serif;
+  font-size: 16.5px;
+  color: #2b2d4a;
+  line-height: 1.75;
   resize: vertical;
 }
 
 .quest-detail-description-input:focus-visible {
   outline: 2px solid #4f46e5;
   outline-offset: 2px;
-  background: #e5e7eb;
 }
 
 .quest-detail-title-input:disabled,
@@ -142,18 +216,19 @@
 }
 
 .quest-detail-save-button {
-  background: #4f46e5;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-size: 14px;
-  font-weight: 500;
+  background: #5f594a;
+  color: #ded7c8;
+  border: 1px solid #4a4539;
+  border-radius: 5px;
+  padding: 8px 20px;
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: 0.5px;
   cursor: pointer;
 }
 
 .quest-detail-save-button:hover:not(:disabled) {
-  background: #4338ca;
+  background: #4a4539;
 }
 
 .quest-detail-save-button:disabled {
@@ -167,18 +242,19 @@
 }
 
 .quest-detail-cancel-button {
-  background: #ffffff;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-size: 14px;
-  font-weight: 500;
+  background: #e6e0cf;
+  color: #2b2d4a;
+  border: 1px solid #b3a37e;
+  border-radius: 5px;
+  padding: 8px 20px;
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: 0.5px;
   cursor: pointer;
 }
 
 .quest-detail-cancel-button:hover:not(:disabled) {
-  background: #f9fafb;
+  background: #ddd6c2;
 }
 
 .quest-detail-cancel-button:disabled {
