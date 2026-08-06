@@ -7,6 +7,7 @@ import "./ArcCard.css";
 interface Props {
   arc: Arc;
   isExpanded: boolean;
+  showCompleted: boolean;
   selectedQuestId: string | null;
   onToggleExpand: (arcId: string) => void;
   onEdit: (arcId: string, title: string) => Promise<void>;
@@ -20,6 +21,7 @@ interface Props {
 export const ArcCard = memo(function ArcCard({
   arc,
   isExpanded,
+  showCompleted,
   selectedQuestId,
   onToggleExpand,
   onEdit,
@@ -116,8 +118,11 @@ export const ArcCard = memo(function ArcCard({
           aria-expanded={isExpanded}
           disabled={isEditing || isSaving}
         >
-          <span className="arc-chevron" aria-hidden="true">
-            {isExpanded ? "▼" : "▶"}
+          <span
+            className={`arc-chevron${isExpanded ? " arc-chevron--expanded" : ""}`}
+            aria-hidden="true"
+          >
+            ▶
           </span>
           {!isEditing && <span className="arc-title">{arc.title}</span>}
         </button>
@@ -177,7 +182,7 @@ export const ArcCard = memo(function ArcCard({
 
       {isExpanded && (
         <div className="quest-list">
-          {arc.quests.map((quest) => (
+          {(showCompleted ? arc.quests : arc.quests.filter((q) => !q.completed)).map((quest) => (
             <QuestRow
               key={quest.id}
               quest={quest}

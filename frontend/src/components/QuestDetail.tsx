@@ -5,11 +5,24 @@ import "./QuestDetail.css";
 
 interface Props {
   quest: Quest | null;
+  arcTitle: string | null;
   onUpdate: (questId: string, title: string, description: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
 }
 
-export const QuestDetail = memo(function QuestDetail({ quest, onUpdate, onToggleComplete }: Props) {
+// The data model has no reminder field, so this always returns null and the
+// reminder callout stays hidden. The code path is kept so a future reminder
+// field can light it up without markup changes.
+function getReminder(): string | null {
+  return null;
+}
+
+export const QuestDetail = memo(function QuestDetail({
+  quest,
+  arcTitle,
+  onUpdate,
+  onToggleComplete,
+}: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -86,8 +99,18 @@ export const QuestDetail = memo(function QuestDetail({ quest, onUpdate, onToggle
     [cancelEdit],
   );
 
+  // Hidden-when-empty reminder callout (no data exists, so it never renders).
+  const reminder = quest ? getReminder() : null;
+
+  // Split on code points (not UTF-16 units) so an astral first character
+  // (e.g. an emoji) isn't torn into broken surrogate halves.
+  const titleChars = quest ? Array.from(quest.title) : [];
+  const dropCap = titleChars[0] ?? "";
+  const titleRest = titleChars.slice(1).join("");
+
   return (
     <div className="quest-detail-panel">
+      <div className="quest-detail-frame" aria-hidden="true" />
       {quest ? (
         <>
           {isEditing ? (
@@ -106,38 +129,28 @@ export const QuestDetail = memo(function QuestDetail({ quest, onUpdate, onToggle
               />
             </div>
           ) : (
-            <div className="quest-detail-title-row">
-              <h2 className="quest-detail-title">{quest.title}</h2>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={startEdit}
-                aria-label="Edit quest"
-                title="Edit quest"
-              >
-                <PencilIcon />
-              </button>
-            </div>
-          )}
-          {!isEditing && (
             <>
-              <hr className="quest-detail-divider" />
-              <button
-                type="button"
-                aria-pressed={quest.completed}
-                className={`complete-button${quest.completed ? " complete-button--done" : ""}`}
-                disabled={isToggling}
-                onClick={() => {
-                  setIsToggling(true);
-                  void onToggleComplete(quest.id, quest.completed).finally(() => {
-                    setIsToggling(false);
-                  });
-                }}
-              >
-                {quest.completed ? "Mark as Incomplete" : "Mark as Complete"}
-              </button>
+              <div className="quest-detail-title-row">
+                <h2 className="quest-detail-title">
+                  <span className="quest-detail-dropcap">{dropCap}</span>
+                  <span className="quest-detail-title-rest">{titleRest}</span>
+                </h2>
+                <button
+                  type="button"
+                  className="icon-button"
+                  onClick={startEdit}
+                  aria-label="Edit quest"
+                  title="Edit quest"
+                >
+                  <PencilIcon />
+                </button>
+              </div>
+              <div className="quest-detail-meta">
+                Arc: {arcTitle ?? "Unassigned"} · {quest.completed ? "Completed" : "Active"}
+              </div>
             </>
           )}
+
           {isEditing ? (
             <>
               <textarea
@@ -174,10 +187,31 @@ export const QuestDetail = memo(function QuestDetail({ quest, onUpdate, onToggle
             </>
           ) : (
             <>
-              <h3 className="description-label">Description</h3>
+              <button
+                type="button"
+                aria-pressed={quest.completed}
+                className={`complete-button${quest.completed ? " complete-button--done" : ""}`}
+                disabled={isToggling}
+                onClick={() => {
+                  setIsToggling(true);
+                  void onToggleComplete(quest.id, quest.completed).finally(() => {
+                    setIsToggling(false);
+                  });
+                }}
+              >
+                {quest.completed ? "Mark as Incomplete" : "Mark as Complete"}
+              </button>
+
+              {reminder && <div className="quest-detail-reminder">{reminder}</div>}
+
               <p className="description-text">
                 {quest.description || <em className="empty-description">No description.</em>}
               </p>
+
+              <div className="quest-detail-subtasks-label">SUBTASKS</div>
+              <div className="quest-detail-subtask-card">
+                <span className="quest-detail-subtask-empty">No subtasks yet.</span>
+              </div>
             </>
           )}
         </>
