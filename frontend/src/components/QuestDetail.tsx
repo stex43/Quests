@@ -17,6 +17,18 @@ function getReminder(): string | null {
   return null;
 }
 
+// Reshapes the server's YYYY-MM-DD into dd.MM.yyyy. Purely textual on purpose: the value
+// is a calendar day with no time zone, and `new Date("2026-01-01")` would read it as UTC
+// midnight and render the previous day for anyone west of UTC. Returns null for a missing
+// or malformed value so the caller can fall back to prose.
+function formatCompletedOn(completedOn: string | null): string | null {
+  if (!completedOn) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(completedOn);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  return `${day}.${month}.${year}`;
+}
+
 export const QuestDetail = memo(function QuestDetail({
   quest,
   arcTitle,
@@ -84,6 +96,18 @@ export const QuestDetail = memo(function QuestDetail({
     }
   }, [quest, editTitle, editDescription, onUpdate]);
 
+  const handleToggle = useCallback(async () => {
+    if (!quest) return;
+    setIsToggling(true);
+    try {
+      await onToggleComplete(quest.id, quest.completed);
+    } catch {
+      // error displayed by parent via mutationError
+    } finally {
+      setIsToggling(false);
+    }
+  }, [quest, onToggleComplete]);
+
   const handleTitleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") void commitEdit();
@@ -101,6 +125,8 @@ export const QuestDetail = memo(function QuestDetail({
 
   // Hidden-when-empty reminder callout (no data exists, so it never renders).
   const reminder = quest ? getReminder() : null;
+
+  const completedOnLabel = quest ? formatCompletedOn(quest.completedOn) : null;
 
   // Split on code points (not UTF-16 units) so an astral first character
   // (e.g. an emoji) isn't torn into broken surrogate halves.
@@ -187,20 +213,24 @@ export const QuestDetail = memo(function QuestDetail({
             </>
           ) : (
             <>
-              <button
-                type="button"
-                aria-pressed={quest.completed}
-                className={`complete-button${quest.completed ? " complete-button--done" : ""}`}
-                disabled={isToggling}
-                onClick={() => {
-                  setIsToggling(true);
-                  void onToggleComplete(quest.id, quest.completed).finally(() => {
-                    setIsToggling(false);
-                  });
-                }}
-              >
-                {quest.completed ? "Mark as Incomplete" : "Mark as Complete"}
-              </button>
+              <div className="quest-detail-status">
+                <button
+                  type="button"
+                  aria-pressed={quest.completed}
+                  className={`complete-button${quest.completed ? " complete-button--done" : ""}`}
+                  disabled={isToggling}
+                  onClick={() => void handleToggle()}
+                >
+                  {quest.completed ? "Mark as Incomplete" : "Mark as Complete"}
+                </button>
+                {quest.completed && (
+                  <span className="quest-detail-completed-at">
+                    {completedOnLabel
+                      ? `Completed on ${completedOnLabel}`
+                      : "Completion date unrecorded"}
+                  </span>
+                )}
+              </div>
 
               {reminder && <div className="quest-detail-reminder">{reminder}</div>}
 

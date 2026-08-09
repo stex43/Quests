@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -26,6 +27,18 @@ class QuestUpdate(BaseModel):
     arc_id: uuid.UUID | None = None
 
 
+class QuestComplete(BaseModel):
+    # Extras are rejected so a misspelled field is a 400 rather than a silent fallback to
+    # the UTC day. Deliberately local to this schema; the other schemas keep Pydantic's
+    # default ignore behaviour.
+    model_config = ConfigDict(extra="forbid")
+
+    # The only thing a client may contribute to completion: its own UTC offset, in minutes
+    # east of UTC (Berlin in summer is +120). It is used to resolve the completer's calendar
+    # day and is not itself persisted. Bounds cover the real-world range of UTC-14..UTC+14.
+    utc_offset_minutes: Annotated[int, Field(ge=-840, le=840)] | None = None
+
+
 class Quest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,6 +47,9 @@ class Quest(BaseModel):
     description: str
     arc_id: uuid.UUID
     completed: bool
+    # Server-managed: set on completion, cleared on un-completion. Not accepted as input.
+    # Serializes as YYYY-MM-DD.
+    completed_on: date | None = None
 
 
 class ArcCreate(BaseModel):

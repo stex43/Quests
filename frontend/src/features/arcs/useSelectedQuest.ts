@@ -31,7 +31,8 @@ export function useSelectedQuest(arcs: Arc[]) {
       found.title !== selectedQuest.title ||
       found.description !== selectedQuest.description ||
       found.arcId !== selectedQuest.arcId ||
-      found.completed !== selectedQuest.completed
+      found.completed !== selectedQuest.completed ||
+      found.completedOn !== selectedQuest.completedOn
     ) {
       reconciled = found;
     }
