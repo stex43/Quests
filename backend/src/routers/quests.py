@@ -54,24 +54,36 @@ def update_quest(
         raise ConflictError("Update failed due to a conflict.")
 
 
-@router.post("/{quest_id}/complete", status_code=status.HTTP_204_NO_CONTENT)
-def complete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo):
-    # Idempotent by design: calling this on an already-completed quest is a no-op.
+@router.post("/{quest_id}/complete", status_code=status.HTTP_200_OK, response_model=schemas.Quest)
+def complete_quest(
+    quest_id: uuid.UUID,
+    db: DbSession,
+    repo: QuestRepo,
+    # Body is optional: a caller that sends nothing completes the quest with a NULL offset.
+    completion: schemas.QuestComplete | None = None,
+):
+    # Idempotent by design: calling this on an already-completed quest leaves it unchanged
+    # (original completed_on intact) and still returns the current quest.
     db_quest = repo.get(quest_id)
     if not db_quest:
         raise NotFoundError("Quest", quest_id)
-    repo.complete(db_quest)
+    quest = repo.complete(db_quest, utc_offset_minutes=completion.utc_offset_minutes if completion else None)
     db.commit()
+    db.refresh(quest)
+    return quest
 
 
-@router.post("/{quest_id}/uncomplete", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/{quest_id}/uncomplete", status_code=status.HTTP_200_OK, response_model=schemas.Quest)
 def uncomplete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo):
-    # Idempotent by design: calling this on an already-incomplete quest is a no-op.
+    # Idempotent by design: calling this on an already-incomplete quest is a no-op and
+    # still returns the current quest.
     db_quest = repo.get(quest_id)
     if not db_quest:
         raise NotFoundError("Quest", quest_id)
-    repo.uncomplete(db_quest)
+    quest = repo.uncomplete(db_quest)
     db.commit()
+    db.refresh(quest)
+    return quest
 
 
 @router.delete("/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)

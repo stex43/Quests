@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -52,11 +53,26 @@ class QuestRepository:
         if arc_id is not None:
             quest.arc_id = arc_id
 
-    def complete(self, quest: models.Quest) -> None:
+    def complete(self, quest: models.Quest, utc_offset_minutes: int | None = None) -> models.Quest:
+        # Only stamp on the incomplete -> complete transition, so re-completing an
+        # already-completed quest preserves the original date.
+        if quest.completed:
+            return quest
         quest.completed = True
+        # The instant is server-generated; the client only says how far east of UTC it sits,
+        # which turns that instant into the completer's own calendar day. Without an offset
+        # the UTC day is the best available answer.
+        now = datetime.now(UTC)
+        if utc_offset_minutes is not None:
+            now += timedelta(minutes=utc_offset_minutes)
+        quest.completed_on = now.date()
+        return quest
 
-    def uncomplete(self, quest: models.Quest) -> None:
+    def uncomplete(self, quest: models.Quest) -> models.Quest:
+        # Cleared unconditionally: also heals rows whose flag and date disagree.
         quest.completed = False
+        quest.completed_on = None
+        return quest
 
     def delete(self, quest: models.Quest) -> None:
         self.db.delete(quest)

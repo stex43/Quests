@@ -12,12 +12,15 @@ async function request(path: string, options?: RequestInit): Promise<Response> {
   return res;
 }
 
-type RawQuest = Omit<Quest, "arcId"> & { arc_id: string };
+type RawQuest = Omit<Quest, "arcId" | "completedOn"> & {
+  arc_id: string;
+  completed_on: string | null;
+};
 type RawArc = Omit<Arc, "quests"> & { quests: RawQuest[] };
 
 function mapQuest(q: RawQuest): Quest {
-  const { arc_id, ...rest } = q;
-  return { ...rest, arcId: arc_id };
+  const { arc_id, completed_on, ...rest } = q;
+  return { ...rest, arcId: arc_id, completedOn: completed_on };
 }
 
 export async function getArcs(): Promise<Arc[]> {
@@ -67,10 +70,23 @@ export async function deleteQuest(id: string): Promise<void> {
   await request(`/quests/${id}`, { method: "DELETE" });
 }
 
-export async function completeQuest(id: string): Promise<void> {
-  await request(`/quests/${id}/complete`, { method: "POST" });
+// Both toggle endpoints return the updated quest, so the server-resolved
+// completedOn comes back with the same request that sets it.
+export async function completeQuest(id: string): Promise<Quest> {
+  // getTimezoneOffset counts minutes *west* of UTC, the opposite of what the API wants,
+  // hence the negation: Berlin in summer reports -120 here and is sent as +120.
+  const utcOffsetMinutes = -new Date().getTimezoneOffset();
+  const raw = await request(`/quests/${id}/complete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ utc_offset_minutes: utcOffsetMinutes }),
+  }).then((r) => r.json() as Promise<RawQuest>);
+  return mapQuest(raw);
 }
 
-export async function uncompleteQuest(id: string): Promise<void> {
-  await request(`/quests/${id}/uncomplete`, { method: "POST" });
+export async function uncompleteQuest(id: string): Promise<Quest> {
+  const raw = await request(`/quests/${id}/uncomplete`, { method: "POST" }).then(
+    (r) => r.json() as Promise<RawQuest>,
+  );
+  return mapQuest(raw);
 }

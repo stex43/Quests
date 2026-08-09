@@ -76,17 +76,20 @@ The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, 
 
 ### Backend (`backend/src/`)
 
-- `main.py` — FastAPI app and all route handlers; validation errors return 400 (not 422); uses `DbSession = Annotated[Session, Depends(get_db)]` alias for session sharing across repo dependencies
+- `main.py` — FastAPI app setup: CORS, exception handler registration, and router registration
+- `routers/` — `arcs.py` and `quests.py` `APIRouter`s holding the route handlers
+- `dependencies.py` — `DbSession = Annotated[Session, Depends(get_db)]` alias plus the `ArcRepo`/`QuestRepo` dependency aliases; the shared `DbSession` is what keeps both repos on one session per request
 - `schemas.py` — Pydantic request/response schemas; `ConstrainedStr` (max 100) for titles, `ConstrainedText` (max 1000) for descriptions; response schemas have `model_config = ConfigDict(from_attributes=True)`
 - `repositories.py` — `ArcRepository` and `QuestRepository`; each takes `Session` in `__init__`; `create` methods call `db.refresh()` after `commit()`; `get_all` uses `selectinload` for eager loading
 - `models.py` — SQLAlchemy ORM models (`Arc`, `Quest`); `Quest.arc` has `lazy="raise"`
 - `database.py` — engine (`echo` gated on `settings.debug`), `SessionLocal`, and `get_db` with explicit rollback on exception
 - `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars; `debug: bool = False`
+- `exceptions.py` / `exception_handlers.py` — domain exceptions and the handlers registered in `main.py` that map them to `ErrorResponse` bodies; routers raise domain exceptions and never `HTTPException`, and the validation handler is what turns 422 into 400
 
 ### Data Model
 
 - **Arc**: a story arc with a title; has many Quests (cascade delete)
-- **Quest**: belongs to an Arc via `arc_id` FK; has title and description
+- **Quest**: belongs to an Arc via `arc_id` FK; has title, description, a `completed` flag, and a nullable `completed_on` date — the completer's local calendar day, resolved server-side from a client-supplied UTC offset (the time of day is deliberately not stored)
 
 ### Migrations
 
@@ -96,28 +99,34 @@ Alembic is configured in `backend/alembic/`. The `env.py` imports `models.Base.m
 
 Split-screen layout with a left navigation panel (300px fixed) and right detail panel.
 
-**Entry & State (`App.tsx`)**
-- Manages all state: `arcs`, `loading`, `error`, `mutationError`, `selectedQuest`
-- Uses `arcsRef` for safe async access to latest arcs state
-- All mutation handlers defined with `useCallback` at the top level and passed down as props
+**Entry (`App.tsx`)**
+- Holds no state of its own; it composes the feature hooks and wires their handlers into the two panels
+- A single `useMutationError()` instance is shared by every hook, so any successful mutation clears a pending error from either domain — do not give a hook its own instance
+
+**State (`frontend/src/features/arcs/`)**
+- `useArcs.ts` — owns `arcs`, `loading`, `error`, and the arc create/update/remove mutations
+- `useQuests.ts` — quest create/update/remove plus `toggleComplete`, which optimistically updates, applies the server response, and rolls back on failure; it patches only the fields a mutation owns so concurrent edits are not clobbered
+- `useSelectedQuest.ts` — tracks the selected quest and re-syncs it from `arcs`; its equality check must list **every** user-visible field or the detail panel renders stale data
+- `useMutationError.ts` — `runMutation` wrapper that sets `mutationError` and re-throws, so callers must catch
 
 **Components (`frontend/src/components/`)**
 - `ArcList.tsx` — left panel container; manages arc expansion state, arc creation form, error dismissal
 - `ArcCard.tsx` — individual arc with expand/collapse, inline title editing, delete confirmation, and inline quest creation
 - `QuestRow.tsx` — single quest item with selection highlighting and delete button
-- `QuestDetail.tsx` — right panel; shows selected quest title/description and "Mark as Complete" placeholder
+- `QuestDetail.tsx` — right panel; shows selected quest title/description with an inline editor, plus a working complete/incomplete toggle that displays the completion date as `dd.MM.yyyy`
 - `icons.tsx` — reusable SVG icons (`PencilIcon`, `TrashIcon`)
 
 **API (`frontend/src/api.ts`)**
 - `request()` helper with unified error handling (includes HTTP status + body in errors)
 - All API calls convert snake_case responses to camelCase (`RawArc`, `RawQuest` types for the mapping)
-- Methods: `fetchArcs`, `createArc`, `updateArc`, `deleteArc`, `createQuest`, `deleteQuest`
+- Methods: `getArcs`, `createArc`, `updateArc`, `deleteArc`, `createQuest`, `updateQuest`, `deleteQuest`, `completeQuest`, `uncompleteQuest`
+- `completeQuest`/`uncompleteQuest` return the updated quest (the endpoints return 200, not 204); `completeQuest` sends the browser's UTC offset so the backend can resolve the completer's local date
 
 **Types (`frontend/src/types.ts`)**
 - Uses camelCase (`arcId`, not `arc_id`) throughout
 
 **Patterns to follow**
-- `React.memo` on all child components; `useCallback` on all handlers in `App.tsx`
+- `React.memo` on all child components; `useCallback` on every handler returned from a feature hook
 - Separate `mutationError` state (distinct from fetch `error`) for create/update/delete failures
 - Error propagation: child catches, re-throws to parent via callback; parent sets `mutationError`
 - Accessibility: `<button>` elements (not divs), ARIA labels on all interactive elements, `focus-visible` outlines (`2px solid #4f46e5`), Enter key support on inputs
