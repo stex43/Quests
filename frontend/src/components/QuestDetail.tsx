@@ -96,9 +96,9 @@ export const QuestDetail = memo(function QuestDetail({
     }
   }, [quest, editTitle, editDescription, onUpdate]);
 
-  // Stays enabled during the round trip for the reason spelled out in QuestRow: a
-  // disabled button flicks the pointer to an arrow and back. useQuests.toggleComplete
-  // holds the double-submit guard.
+  // Stays enabled during the round trip for the reasons spelled out in QuestRow: the
+  // optimistic flip is the feedback, and disabling a focused button blurs it to <body>.
+  // useQuests.toggleComplete holds the double-submit guard.
   const handleToggle = useCallback(async () => {
     if (!quest) return;
     try {

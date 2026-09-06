@@ -32,10 +32,14 @@ export const QuestRow = memo(function QuestRow({
   }
 
   // The control is deliberately not disabled while the toggle is in flight. The
-  // optimistic flip has already landed, and a disabled button swaps the pointer for
-  // an arrow and back for the length of the round trip, which reads as the page
-  // reloading. A second click is absorbed by toggleInFlightRef in
-  // useQuests.toggleComplete, so the guard costs nothing visually.
+  // optimistic flip is itself the feedback, so there is nothing left to signal, and
+  // disabling a focused button blurs it to <body> -- which loses a keyboard user's
+  // place mid-toggle and never gives it back. A second click is absorbed by
+  // toggleInFlightRef in useQuests.toggleComplete, so nothing here is unguarded.
+  // The symptom that first exposed this was narrower: a `:disabled { cursor: default }`
+  // rule, since deleted, flicked the pointer from hand to arrow and back, which reads
+  // as the page reloading. Re-adding `disabled` would no longer do that -- the reasons
+  // above are the ones that still hold.
   async function handleToggle() {
     try {
       await onToggleComplete(quest.id, quest.completed);
