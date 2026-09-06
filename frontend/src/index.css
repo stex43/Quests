@@ -67,8 +67,31 @@
   --qj-wash: #00000010;
   --qj-wash-strong: #00000012;
 
-  /* Focus */
-  --qj-focus-ring: 2px solid #4f46e5;
+  /* Focus. Declared after --qj-ink-heading and --qj-selected-icon, which they build on.
+     The ink ring is for controls sitting on the parchment (~5.5:1 over the panels,
+     ~7:1 over the field fill) -- comfortably past the 3:1 non-text floor. It goes
+     invisible on a dark ground, so anything drawing a ring over --qj-selected or a
+     similarly dark fill takes the inverse instead. That one builds on
+     --qj-selected-icon rather than a second near-white: it is the ink the selected
+     row's own icons already use, so the ring and the icon 2px inside it read as one
+     colour instead of two, and it measures better besides (~5.9:1 over the selected
+     purple).
+
+     Editable text fields are the deliberate exception to both. They set
+     outline: none and let the caret be the focus indicator. A text input always
+     matches :focus-visible, so the global rule below would float a ring 2px outside
+     the field's own border even on an ordinary mouse click, reading as a second
+     frame. Suppressing it does not remove the ability to tell where focus is: the
+     blinking text cursor is itself a focus indicator, which the Understanding
+     document for WCAG 2.4.7 accepts. That reasoning is specific to editable text
+     fields. A button has no caret, so buttons, icon buttons and the wax stamp keep
+     --qj-focus-ring, and the controls inside a selected quest row keep
+     --qj-focus-ring-inverse -- do not copy outline: none onto them. The five fields
+     that do suppress it are .quest-detail-title-input,
+     .quest-detail-description-input, .arc-title-input, .new-quest-input and
+     .arc-list-input; each one points back here. */
+  --qj-focus-ring: 2px solid var(--qj-ink-heading);
+  --qj-focus-ring-inverse: 2px solid var(--qj-selected-icon);
 
   /* Type */
   --qj-font-display: "Cinzel Decorative", serif;

@@ -81,7 +81,15 @@ export const QuestDetail = memo(function QuestDetail({
     if (isSaving) return;
     const target = pendingFocusRef.current;
     if (!target) return;
+    // Cleared before the bail below, not after: a request that goes unhonoured here must
+    // not survive to a later render and yank focus out of wherever the user has moved on
+    // to by then.
     pendingFocusRef.current = null;
+    // Restore only if the disable blurred focus to <body> and nobody has claimed it
+    // since. The left panel stays interactive during a save, so the user can click an
+    // arc chevron while the request is in flight; that focus is theirs, and a failure
+    // arriving afterwards has no business dragging them back into the detail panel.
+    if (document.activeElement && document.activeElement !== document.body) return;
     if (target === "input") titleInputRef.current?.focus();
     else if (target === "description") descriptionInputRef.current?.focus();
     else editButtonRef.current?.focus();
@@ -106,75 +114,100 @@ export const QuestDetail = memo(function QuestDetail({
     setIsEditing(false);
   }, [quest]);
 
-  const commitEdit = useCallback(async () => {
-    if (!quest) return;
-    if (commitInFlightRef.current) return;
-    commitInFlightRef.current = true;
-    // Read once, up front: `quest` is the prop this callback closed over, and by the
-    // time the await resolves the panel may be showing a different one.
-    const questId = quest.id;
-    const title = editTitle.trim();
-    const description = editDescription.trim();
-    if (!title) {
-      commitInFlightRef.current = false;
-      // The button stays focusable when the title is empty (aria-disabled, not
-      // disabled), so a click or Enter lands here and this message is the answer to
-      // "why did nothing happen?" -- matching ArcCard's inline editor. Both controls
-      // that can trigger it point at the message via aria-describedby.
-      setEditError("Title cannot be empty");
-      return;
-    }
-    // Disabling the fields blurs whatever is focused to <body>, so record where the
-    // user actually was before that happens. A failed save is a server error shown in
-    // the parent's banner, not a title problem, so someone who saved from the
-    // description belongs back in the description rather than moved to the title.
-    const focusOnFailure: "input" | "description" | "button" =
-      document.activeElement === descriptionInputRef.current
-        ? "description"
-        : document.activeElement === titleInputRef.current
-          ? "input"
-          : "button";
-    setEditError(null);
-    setSavingQuestId(questId);
-    try {
-      await onUpdate(questId, title, description);
-      // The selection may have moved while this was in flight, and the new quest's
-      // editor may already be open with its own draft. Writing this quest's state now
-      // would discard that draft, force that editor closed and pull focus across the
-      // panel -- exactly the steal the quest-switch effect above avoids, which it
-      // cannot do by itself because it ran before pendingFocusRef was set here.
-      if (prevQuestIdRef.current !== questId) return;
-      setEditTitle(title);
-      setEditDescription(description);
-      pendingFocusRef.current = "button";
-      setIsEditing(false);
-    } catch {
-      // error displayed by parent via mutationError. The editor stays open, so put
-      // focus back where the user left it -- isEditing never changed, so the effect
-      // above is the only thing that can restore it. Same identity guard: this failure
-      // belongs to a quest that is no longer on screen.
-      if (prevQuestIdRef.current !== questId) return;
-      pendingFocusRef.current = focusOnFailure;
-    } finally {
-      // Unconditional, unlike the writes above: these are component-wide, so they have
-      // to clear even when the guards bail out or the editor stays disabled and no
-      // further save can ever start.
-      setSavingQuestId(null);
-      commitInFlightRef.current = false;
-    }
-  }, [quest, editTitle, editDescription, onUpdate]);
+  // Focus restoration here is deliberately asymmetric, and `fromKeyboard` is what carries
+  // the modality in. Browsers suppress the focus ring for pointer interactions, but moving
+  // focus in code draws one regardless, so the button only takes focus back when the
+  // activation was keyboard-driven:
+  //   - save succeeded (the editor closes): focus the button only if fromKeyboard. A mouse
+  //     user gets no focus move and no ring.
+  //   - Enter in the title field: keyboard by definition, so it passes true.
+  //   - Escape / cancelEdit: only reachable from a keydown, so it focuses unconditionally.
+  //   - save failed (the editor stays open): restore focus to the control the user was in,
+  //     whatever the modality, unless they have since moved it somewhere else. Disabling
+  //     the fields blurred focus to <body>, Escape is inert from there, and the user may
+  //     need to recover -- stranding a mouse user in an editor they can no longer dismiss
+  //     is the case this mechanism exists for. Every restore target listens for Escape,
+  //     including the button, so any of the three lands them somewhere they can back out.
+  const commitEdit = useCallback(
+    async (fromKeyboard: boolean) => {
+      if (!quest) return;
+      if (commitInFlightRef.current) return;
+      commitInFlightRef.current = true;
+      // Read once, up front: `quest` is the prop this callback closed over, and by the
+      // time the await resolves the panel may be showing a different one.
+      const questId = quest.id;
+      const title = editTitle.trim();
+      const description = editDescription.trim();
+      if (!title) {
+        commitInFlightRef.current = false;
+        // The button stays focusable when the title is empty (aria-disabled, not
+        // disabled), so a click or Enter lands here and this message is the answer to
+        // "why did nothing happen?" -- matching ArcCard's inline editor. Both controls
+        // that can trigger it point at the message via aria-describedby.
+        setEditError("Title cannot be empty");
+        return;
+      }
+      // Disabling the fields blurs whatever is focused to <body>, so record where the
+      // user actually was before that happens. A failed save is a server error shown in
+      // the parent's banner, not a title problem, so someone who saved from the
+      // description belongs back in the description rather than moved to the title.
+      const focusOnFailure: "input" | "description" | "button" =
+        document.activeElement === descriptionInputRef.current
+          ? "description"
+          : document.activeElement === titleInputRef.current
+            ? "input"
+            : "button";
+      setEditError(null);
+      setSavingQuestId(questId);
+      try {
+        await onUpdate(questId, title, description);
+        // The selection may have moved while this was in flight, and the new quest's
+        // editor may already be open with its own draft. Writing this quest's state now
+        // would discard that draft, force that editor closed and pull focus across the
+        // panel -- exactly the steal the quest-switch effect above avoids, which it
+        // cannot do by itself because it ran before pendingFocusRef was set here.
+        if (prevQuestIdRef.current !== questId) return;
+        setEditTitle(title);
+        setEditDescription(description);
+        if (fromKeyboard) pendingFocusRef.current = "button";
+        setIsEditing(false);
+      } catch {
+        // error displayed by parent via mutationError. The editor stays open, so put
+        // focus back where the user left it -- isEditing never changed, so the effect
+        // above is the only thing that can restore it. Same identity guard: this failure
+        // belongs to a quest that is no longer on screen.
+        if (prevQuestIdRef.current !== questId) return;
+        pendingFocusRef.current = focusOnFailure;
+      } finally {
+        // Unconditional, unlike the writes above: these are component-wide, so they have
+        // to clear even when the guards bail out or the editor stays disabled and no
+        // further save can ever start.
+        setSavingQuestId(null);
+        commitInFlightRef.current = false;
+      }
+    },
+    [quest, editTitle, editDescription, onUpdate],
+  );
 
   // One button at the end of the title row serves both modes: it opens the editor as a
   // pencil, then becomes the save control. Its accessible name changes along with it,
   // because the action itself changes -- unlike the stamp, this is not a toggle with a
   // single static name.
-  const handleEditButtonClick = useCallback(() => {
-    if (isEditing) {
-      void commitEdit();
-    } else {
-      startEdit();
-    }
-  }, [isEditing, commitEdit, startEdit]);
+  //
+  // event.detail is the click count: 0 for the click a browser synthesises from Enter or
+  // Space on a focused button, non-zero for a real pointer click. That is the whole
+  // modality check -- no global pointerdown/keydown listeners needed for something this
+  // local. See commitEdit for what the answer is used for.
+  const handleEditButtonClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (isEditing) {
+        void commitEdit(event.detail === 0);
+      } else {
+        startEdit();
+      }
+    },
+    [isEditing, commitEdit, startEdit],
+  );
 
   // Stays enabled during the round trip for the reasons spelled out in QuestRow: the
   // optimistic flip is the feedback, and disabling a focused button blurs it to <body>.
@@ -190,7 +223,7 @@ export const QuestDetail = memo(function QuestDetail({
 
   const handleTitleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") void commitEdit();
+      if (e.key === "Enter") void commitEdit(true);
       if (e.key === "Escape") cancelEdit();
     },
     [commitEdit, cancelEdit],
@@ -201,6 +234,22 @@ export const QuestDetail = memo(function QuestDetail({
       if (e.key === "Escape") cancelEdit();
     },
     [cancelEdit],
+  );
+
+  // Escape has to work from the button too, not only from the two fields. The mouse
+  // route into an open editor with focus here is the common one: clicking Save focuses
+  // the button, so commitEdit's focusOnFailure resolves to "button" and a failed save
+  // restores focus to a control that used to listen for nothing -- leaving the user in
+  // an editor they cannot dismiss, which is the exact capability that restore exists to
+  // preserve. It also covers a keyboard user who simply Tabs to the button. This lives
+  // on the button rather than a container because the description textarea sits outside
+  // .quest-detail-headings, so any region handler would either miss it or have to cover
+  // more of the panel than the editor.
+  const handleEditButtonKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (isEditing && e.key === "Escape") cancelEdit();
+    },
+    [isEditing, cancelEdit],
   );
 
   // Drives aria-disabled rather than disabled: a control the user cannot currently
@@ -284,6 +333,7 @@ export const QuestDetail = memo(function QuestDetail({
                   type="button"
                   className={`quest-detail-edit-button${isEditing ? " quest-detail-edit-button--save" : ""}`}
                   onClick={handleEditButtonClick}
+                  onKeyDown={handleEditButtonKeyDown}
                   disabled={isSaving}
                   aria-disabled={isTitleEmpty}
                   aria-label={isEditing ? "Save changes" : "Edit quest"}

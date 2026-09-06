@@ -96,9 +96,9 @@
   font-style: italic;
 }
 
+/* No ring: the caret is the focus indicator. See the Focus block in index.css. */
 .arc-list-input:focus-visible {
-  outline: var(--qj-focus-ring);
-  outline-offset: 2px;
+  outline: none;
 }
 
 .add-button {

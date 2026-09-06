@@ -76,9 +76,13 @@
   color: var(--qj-ink);
 }
 
-.arc-title-input:focus-visible {
-  outline: var(--qj-focus-ring);
-  outline-offset: 2px;
+/* No ring: the caret is the focus indicator, and the full rationale lives with the
+   token definitions in index.css. The :not() excludes the error state rather than
+   leaving the red ring to win on source order -- the two rules are tied at (0,2,0),
+   so regrouping this file would silently drop the red ring off a focused invalid
+   field, with nothing in the build, the lint or the happy path to catch it. */
+.arc-title-input:focus-visible:not(.arc-title-input--error) {
+  outline: none;
 }
 
 .arc-title-input--error {
@@ -122,9 +126,9 @@
   font-style: italic;
 }
 
+/* No ring: the caret is the focus indicator. See the Focus block in index.css. */
 .new-quest-input:focus-visible {
-  outline: var(--qj-focus-ring);
-  outline-offset: 2px;
+  outline: none;
 }
 
 .small-add-button {

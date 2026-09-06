@@ -130,7 +130,7 @@ Split-screen layout with a left navigation panel (640px fixed) and right detail 
 - `React.memo` on all child components; `useCallback` on every handler returned from a feature hook
 - Separate `mutationError` state (distinct from fetch `error`) for create/update/delete failures
 - Error propagation: child catches, re-throws to parent via callback; parent sets `mutationError`
-- Accessibility: `<button>` elements (not divs), ARIA labels on all interactive elements, `focus-visible` outlines (`2px solid #4f46e5`), Enter key support on inputs
+- Accessibility: `<button>` elements (not divs), ARIA labels on all interactive elements, `focus-visible` outlines (`--qj-focus-ring`, or `--qj-focus-ring-inverse` over the dark selected row; both defined in `index.css`) on everything except editable text fields, where the caret is deliberately the only focus indicator, Enter key support on inputs
 
 ## Workflow
 
