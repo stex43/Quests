@@ -31,7 +31,6 @@
   --qj-field: #efe9db;
   --qj-field-border: #b3a37e;
   --qj-card: #e6e0cf;
-  --qj-card-hover: #ddd6c2;
   --qj-control: #5f594a;
   --qj-control-hover: #4a4539;
   --qj-control-ink: #ded7c8;
@@ -53,14 +52,11 @@
   --qj-done: #4f7a3a;
   --qj-done-ring: #3d5c2c;
   --qj-done-ink: #3a5028;
-  --qj-done-bg: #dce9d3;
-  --qj-done-border: #8ba374;
   --qj-active-ring: #6b6455;
 
   /* Glyphs */
   --qj-stamp-glyph: #f4f1e6;
   --qj-check-ink: #fff;
-  --qj-reminder-ink: #3d4a2f;
 
   /* Error UI (not a quest status) */
   --qj-error: #b0553f;
@@ -130,4 +126,19 @@ body {
 .icon-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Hides content visually while keeping it in the accessibility tree -- for headings
+   and labels that have a visual equivalent elsewhere. display: none or
+   visibility: hidden would drop it from the tree as well, which defeats the point. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

@@ -82,18 +82,6 @@
   margin: 6px 0 22px 2px;
 }
 
-.quest-detail-reminder {
-  background: var(--qj-done-bg);
-  border: 1px solid var(--qj-done-border);
-  border-radius: var(--qj-radius);
-  padding: 14px 18px;
-  margin-bottom: 26px;
-  font-family: var(--qj-font-body);
-  font-size: 15.5px;
-  color: var(--qj-reminder-ink);
-  line-height: 1.5;
-}
-
 /* The wax stamp: hollow ring while the deed is open, filled and sealed when done. */
 .quest-stamp {
   flex: none;
@@ -156,7 +144,15 @@
   border: none;
   cursor: pointer;
   color: var(--qj-ink-muted);
-  opacity: 0.7;
+  /* On the base rule, not the save variant's hover: a focus ring drawn while the
+     button is not hovered would otherwise be square and round itself on hover. */
+  border-radius: var(--qj-radius);
+  /* The design idles this icon at 0.7 opacity, but --qj-ink-muted at 70% over the
+     parchment is ~2.6:1 -- under the 3:1 floor for an icon-only control, the same
+     floor .quest-stamp above overrides the mock to satisfy. Full opacity is ~4.3:1.
+     The hover state swaps in --qj-crimson, so the affordance survives without the
+     opacity ramp; no wash is added here. */
+  opacity: 1;
 }
 
 .quest-detail-edit-button svg {
@@ -164,14 +160,60 @@
   height: 18px;
 }
 
-.quest-detail-edit-button:hover {
-  opacity: 1;
+.quest-detail-edit-button:hover:not(:disabled):not([aria-disabled="true"]) {
   color: var(--qj-crimson);
+}
+
+/* Save variant of the same button. Doubling the class outranks the pencil's
+   hover rule on specificity rather than on source order, because crimson reads
+   as destructive on a save action -- this one keeps the completion green.
+   The full opacity it needs (--qj-done-ring at the design's 0.7 would be ~2.9:1,
+   under both the 4.5:1 this 18px glyph needs and the 3:1 control floor; at 1 it is
+   ~5.2:1) now comes from the base rule. Hover has to signal itself some other way
+   than an opacity ramp, so it borrows the wash .icon-button uses instead of
+   brightness(), which would lighten the dark green and give the contrast back. */
+.quest-detail-edit-button.quest-detail-edit-button--save {
+  color: var(--qj-done-ring);
+}
+
+.quest-detail-edit-button.quest-detail-edit-button--save:hover:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
+  color: var(--qj-done-ring);
+  background: var(--qj-wash-strong);
+}
+
+/* Two ways to be unavailable, deliberately styled apart. :disabled is the save
+   round trip: genuinely inactive, out of the tab order and momentary, which is
+   what exempts it from the 1.4.11 contrast floor -- so it takes the dim. */
+.quest-detail-edit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* aria-disabled is the empty title: the control stays focusable and its handler
+   still runs (it is what surfaces the error message), so it is an operable
+   control and has to hold 3:1 -- --qj-done-ring at 0.5 over the parchment is
+   ~2.1:1. It keeps full opacity and signals the block through the cursor; the
+   red input outline and the error message carry the reason. Neither rule
+   touches colour, so the save variant's green survives both. */
+.quest-detail-edit-button[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 .quest-detail-edit-button:focus-visible {
   outline: var(--qj-focus-ring);
   outline-offset: 2px;
+}
+
+/* U+2713 is not in the EB Garamond subset, so pin the same symbol stack the
+   wax stamp and the row checkboxes use rather than letting each platform
+   pick its own fallback face. */
+.quest-detail-save-glyph {
+  font-family: var(--qj-glyph-font);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .description-text {
@@ -218,20 +260,20 @@
   margin-top: 40px;
 }
 
-.quest-detail-edit-header {
-  margin-bottom: 16px;
-}
-
+/* Takes the h2's place inside .quest-detail-title-row, so it shares the row with
+   the save button instead of spanning the panel. */
 .quest-detail-title-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
   background: var(--qj-field);
   border: 1px solid var(--qj-field-border);
   border-radius: var(--qj-radius);
-  padding: 8px 12px;
+  padding: 6px 12px;
   font-family: var(--qj-font-heading);
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
+  letter-spacing: 0.5px;
   color: var(--qj-ink);
 }
 
@@ -240,13 +282,35 @@
   outline-offset: 2px;
 }
 
+.quest-detail-title-input--error {
+  outline: 2px solid var(--qj-error);
+}
+
+.quest-detail-title-input--error:focus-visible {
+  outline: 2px solid var(--qj-error);
+  outline-offset: 2px;
+}
+
+/* Sits between the title row and the meta line, on a line of its own -- display:block
+   so the top margin applies and so it never shares the row with the input. */
+.quest-detail-title-error {
+  display: block;
+  font-family: var(--qj-font-body);
+  font-size: 14px;
+  color: var(--qj-error);
+  margin: 6px 0 0 2px;
+}
+
+/* Stands in for .description-text, so it carries that element's bottom spacing
+   down to the subtasks label -- there is no action row under it any more. */
 .quest-detail-description-input {
   width: 100%;
   box-sizing: border-box;
+  margin-bottom: 30px;
   background: var(--qj-field);
   border: 1px solid var(--qj-field-border);
   border-radius: var(--qj-radius);
-  padding: 10px 14px;
+  padding: 12px 14px;
   font-family: var(--qj-font-body);
   font-size: 16.5px;
   color: var(--qj-ink);
@@ -263,62 +327,4 @@
 .quest-detail-description-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.quest-detail-edit-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.quest-detail-save-button {
-  background: var(--qj-control);
-  color: var(--qj-control-ink);
-  border: 1px solid var(--qj-control-hover);
-  border-radius: var(--qj-radius);
-  padding: 8px 20px;
-  font-family: var(--qj-font-heading);
-  font-size: 13px;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-}
-
-.quest-detail-save-button:hover:not(:disabled) {
-  background: var(--qj-control-hover);
-}
-
-.quest-detail-save-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.quest-detail-save-button:focus-visible {
-  outline: var(--qj-focus-ring);
-  outline-offset: 2px;
-}
-
-.quest-detail-cancel-button {
-  background: var(--qj-card);
-  color: var(--qj-ink);
-  border: 1px solid var(--qj-field-border);
-  border-radius: var(--qj-radius);
-  padding: 8px 20px;
-  font-family: var(--qj-font-heading);
-  font-size: 13px;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-}
-
-.quest-detail-cancel-button:hover:not(:disabled) {
-  background: var(--qj-card-hover);
-}
-
-.quest-detail-cancel-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.quest-detail-cancel-button:focus-visible {
-  outline: var(--qj-focus-ring);
-  outline-offset: 2px;
 }
