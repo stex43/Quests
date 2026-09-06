@@ -117,6 +117,17 @@
   line-height: 1;
 }
 
+/* A selected row is dark purple, and these rings are drawn over it at a 2px offset
+   rather than out on the parchment, so the ink ring would sit at ~1.1:1 and vanish.
+   The inverse token is the same ink this row's own icons already use on that fill.
+   Deliberately every focusable descendant rather than a list of the three controls
+   the row happens to have today: an allowlist fails open, handing a control added
+   later the invisible ink ring with nothing to catch it. At (0,3,0) this still
+   outranks the (0,2,0) base :focus-visible rules above. */
+.quest-row[data-selected="true"] :focus-visible {
+  outline: var(--qj-focus-ring-inverse);
+}
+
 .quest-row[data-selected="true"] .icon-button {
   color: var(--qj-selected-icon);
 }

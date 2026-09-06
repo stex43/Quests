@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
 import type { Quest } from "../types";
 import { PencilIcon } from "./icons";
 import "./QuestDetail.css";
@@ -8,13 +8,6 @@ interface Props {
   arcTitle: string | null;
   onUpdate: (questId: string, title: string, description: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
-}
-
-// The data model has no reminder field, so this always returns null and the
-// reminder callout stays hidden. The code path is kept so a future reminder
-// field can light it up without markup changes.
-function getReminder(): string | null {
-  return null;
 }
 
 const NBSP = "\u00a0";
@@ -40,11 +33,33 @@ export const QuestDetail = memo(function QuestDetail({
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  // The id of the quest whose save is in flight rather than a bare boolean: the left
+  // panel stays interactive during a save, so the selection can move on before the
+  // request settles and the two quests have to be told apart.
+  const [savingQuestId, setSavingQuestId] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
   const commitInFlightRef = useRef(false);
   const prevQuestIdRef = useRef<string | null>(null);
+  // Where focus should land once the controls are interactive again. Disabling the
+  // focused input or button during a save blurs it to <body>, so every transition that
+  // does that records its destination here and the effect below restores it.
+  const pendingFocusRef = useRef<"input" | "description" | "button" | null>(null);
+  const errorId = useId();
 
+  const isSaving = savingQuestId !== null;
+  // The in-flight save belongs to one quest, so the fields key off this instead of the
+  // component-wide flag: if the selection moves mid-flight, the newly selected quest's
+  // editor must not inherit the old one's disabled fields -- that would freeze the new
+  // draft and make the [isEditing] focus effect below a silent no-op. The button keeps
+  // the component-wide gate, which is what commitInFlightRef also enforces.
+  const isSavingThisQuest = savingQuestId !== null && savingQuestId === quest?.id;
+
+  // Switching quests closes the editor but deliberately leaves pendingFocusRef null:
+  // the user's focus is in the left-hand list, and yanking it into the detail panel
+  // would fight them. Only the explicit save/cancel paths request focus.
   useEffect(() => {
     if (quest?.id !== prevQuestIdRef.current) {
       setIsEditing(false);
@@ -58,10 +73,33 @@ export const QuestDetail = memo(function QuestDetail({
     if (isEditing) titleInputRef.current?.focus();
   }, [isEditing]);
 
+  // Runs on the render that re-enables the controls -- isSaving is in the deps so this
+  // fires after the save settles, not while the target is still disabled. It stays on
+  // the component-wide flag rather than isSavingThisQuest because the button is
+  // disabled on that same flag, and focusing a disabled button silently fails.
+  useEffect(() => {
+    if (isSaving) return;
+    const target = pendingFocusRef.current;
+    if (!target) return;
+    // Cleared before the bail below, not after: a request that goes unhonoured here must
+    // not survive to a later render and yank focus out of wherever the user has moved on
+    // to by then.
+    pendingFocusRef.current = null;
+    // Restore only if the disable blurred focus to <body> and nobody has claimed it
+    // since. The left panel stays interactive during a save, so the user can click an
+    // arc chevron while the request is in flight; that focus is theirs, and a failure
+    // arriving afterwards has no business dragging them back into the detail panel.
+    if (document.activeElement && document.activeElement !== document.body) return;
+    if (target === "input") titleInputRef.current?.focus();
+    else if (target === "description") descriptionInputRef.current?.focus();
+    else editButtonRef.current?.focus();
+  }, [isEditing, isSaving]);
+
   const startEdit = useCallback(() => {
     if (!quest) return;
     setEditTitle(quest.title);
     setEditDescription(quest.description);
+    setEditError(null);
     setIsEditing(true);
   }, [quest]);
 
@@ -69,32 +107,107 @@ export const QuestDetail = memo(function QuestDetail({
     if (!quest) return;
     setEditTitle(quest.title);
     setEditDescription(quest.description);
+    setEditError(null);
+    // The focused field unmounts with the editor, so send focus to the button it
+    // collapses back into.
+    pendingFocusRef.current = "button";
     setIsEditing(false);
   }, [quest]);
 
-  const commitEdit = useCallback(async () => {
-    if (!quest) return;
-    if (commitInFlightRef.current) return;
-    commitInFlightRef.current = true;
-    const title = editTitle.trim();
-    const description = editDescription.trim();
-    if (!title) {
-      commitInFlightRef.current = false;
-      return;
-    }
-    setIsSaving(true);
-    try {
-      await onUpdate(quest.id, title, description);
-      setEditTitle(title);
-      setEditDescription(description);
-      setIsEditing(false);
-    } catch {
-      // error displayed by parent via mutationError
-    } finally {
-      setIsSaving(false);
-      commitInFlightRef.current = false;
-    }
-  }, [quest, editTitle, editDescription, onUpdate]);
+  // Focus restoration here is deliberately asymmetric, and `fromKeyboard` is what carries
+  // the modality in. Browsers suppress the focus ring for pointer interactions, but moving
+  // focus in code draws one regardless, so the button only takes focus back when the
+  // activation was keyboard-driven:
+  //   - save succeeded (the editor closes): focus the button only if fromKeyboard. A mouse
+  //     user gets no focus move and no ring.
+  //   - Enter in the title field: keyboard by definition, so it passes true.
+  //   - Escape / cancelEdit: only reachable from a keydown, so it focuses unconditionally.
+  //   - save failed (the editor stays open): restore focus to the control the user was in,
+  //     whatever the modality, unless they have since moved it somewhere else. Disabling
+  //     the fields blurred focus to <body>, Escape is inert from there, and the user may
+  //     need to recover -- stranding a mouse user in an editor they can no longer dismiss
+  //     is the case this mechanism exists for. Every restore target listens for Escape,
+  //     including the button, so any of the three lands them somewhere they can back out.
+  const commitEdit = useCallback(
+    async (fromKeyboard: boolean) => {
+      if (!quest) return;
+      if (commitInFlightRef.current) return;
+      commitInFlightRef.current = true;
+      // Read once, up front: `quest` is the prop this callback closed over, and by the
+      // time the await resolves the panel may be showing a different one.
+      const questId = quest.id;
+      const title = editTitle.trim();
+      const description = editDescription.trim();
+      if (!title) {
+        commitInFlightRef.current = false;
+        // The button stays focusable when the title is empty (aria-disabled, not
+        // disabled), so a click or Enter lands here and this message is the answer to
+        // "why did nothing happen?" -- matching ArcCard's inline editor. Both controls
+        // that can trigger it point at the message via aria-describedby.
+        setEditError("Title cannot be empty");
+        return;
+      }
+      // Disabling the fields blurs whatever is focused to <body>, so record where the
+      // user actually was before that happens. A failed save is a server error shown in
+      // the parent's banner, not a title problem, so someone who saved from the
+      // description belongs back in the description rather than moved to the title.
+      const focusOnFailure: "input" | "description" | "button" =
+        document.activeElement === descriptionInputRef.current
+          ? "description"
+          : document.activeElement === titleInputRef.current
+            ? "input"
+            : "button";
+      setEditError(null);
+      setSavingQuestId(questId);
+      try {
+        await onUpdate(questId, title, description);
+        // The selection may have moved while this was in flight, and the new quest's
+        // editor may already be open with its own draft. Writing this quest's state now
+        // would discard that draft, force that editor closed and pull focus across the
+        // panel -- exactly the steal the quest-switch effect above avoids, which it
+        // cannot do by itself because it ran before pendingFocusRef was set here.
+        if (prevQuestIdRef.current !== questId) return;
+        setEditTitle(title);
+        setEditDescription(description);
+        if (fromKeyboard) pendingFocusRef.current = "button";
+        setIsEditing(false);
+      } catch {
+        // error displayed by parent via mutationError. The editor stays open, so put
+        // focus back where the user left it -- isEditing never changed, so the effect
+        // above is the only thing that can restore it. Same identity guard: this failure
+        // belongs to a quest that is no longer on screen.
+        if (prevQuestIdRef.current !== questId) return;
+        pendingFocusRef.current = focusOnFailure;
+      } finally {
+        // Unconditional, unlike the writes above: these are component-wide, so they have
+        // to clear even when the guards bail out or the editor stays disabled and no
+        // further save can ever start.
+        setSavingQuestId(null);
+        commitInFlightRef.current = false;
+      }
+    },
+    [quest, editTitle, editDescription, onUpdate],
+  );
+
+  // One button at the end of the title row serves both modes: it opens the editor as a
+  // pencil, then becomes the save control. Its accessible name changes along with it,
+  // because the action itself changes -- unlike the stamp, this is not a toggle with a
+  // single static name.
+  //
+  // event.detail is the click count: 0 for the click a browser synthesises from Enter or
+  // Space on a focused button, non-zero for a real pointer click. That is the whole
+  // modality check -- no global pointerdown/keydown listeners needed for something this
+  // local. See commitEdit for what the answer is used for.
+  const handleEditButtonClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (isEditing) {
+        void commitEdit(event.detail === 0);
+      } else {
+        startEdit();
+      }
+    },
+    [isEditing, commitEdit, startEdit],
+  );
 
   // Stays enabled during the round trip for the reasons spelled out in QuestRow: the
   // optimistic flip is the feedback, and disabling a focused button blurs it to <body>.
@@ -110,7 +223,7 @@ export const QuestDetail = memo(function QuestDetail({
 
   const handleTitleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") void commitEdit();
+      if (e.key === "Enter") void commitEdit(true);
       if (e.key === "Escape") cancelEdit();
     },
     [commitEdit, cancelEdit],
@@ -123,8 +236,25 @@ export const QuestDetail = memo(function QuestDetail({
     [cancelEdit],
   );
 
-  // Hidden-when-empty reminder callout (no data exists, so it never renders).
-  const reminder = quest ? getReminder() : null;
+  // Escape has to work from the button too, not only from the two fields. The mouse
+  // route into an open editor with focus here is the common one: clicking Save focuses
+  // the button, so commitEdit's focusOnFailure resolves to "button" and a failed save
+  // restores focus to a control that used to listen for nothing -- leaving the user in
+  // an editor they cannot dismiss, which is the exact capability that restore exists to
+  // preserve. It also covers a keyboard user who simply Tabs to the button. This lives
+  // on the button rather than a container because the description textarea sits outside
+  // .quest-detail-headings, so any region handler would either miss it or have to cover
+  // more of the panel than the editor.
+  const handleEditButtonKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (isEditing && e.key === "Escape") cancelEdit();
+    },
+    [isEditing, cancelEdit],
+  );
+
+  // Drives aria-disabled rather than disabled: a control the user cannot currently
+  // use still has to be reachable by keyboard to explain itself.
+  const isTitleEmpty = isEditing && editTitle.trim() === "";
 
   const completedOnLabel = quest ? formatCompletedOn(quest.completedOn) : null;
 
@@ -143,113 +273,130 @@ export const QuestDetail = memo(function QuestDetail({
       <div className="quest-detail-frame" aria-hidden="true" />
       {quest ? (
         <>
-          {isEditing ? (
-            <div className="quest-detail-edit-header">
-              <input
-                ref={titleInputRef}
-                className="quest-detail-title-input"
-                value={editTitle}
-                disabled={isSaving}
-                maxLength={100}
-                onChange={(e) => {
-                  setEditTitle(e.target.value);
-                }}
-                onKeyDown={handleTitleKeyDown}
-                aria-label="Quest title"
-              />
-            </div>
-          ) : (
-            <div className="quest-detail-header">
-              <button
-                type="button"
-                className={`quest-stamp${quest.completed ? " quest-stamp--done" : ""}`}
-                aria-pressed={quest.completed}
-                aria-label="Toggle quest complete"
-                title="Toggle quest complete"
-                onClick={() => void handleToggle()}
-              >
-                {quest.completed && (
-                  <span className="quest-stamp-glyph" aria-hidden="true">
-                    ✓
-                  </span>
-                )}
-              </button>
-              <div className="quest-detail-headings">
-                <div className="quest-detail-title-row">
+          {/* The header renders in both modes: editing swaps the title for an input in
+              place, so the stamp and the meta line stay where they were. */}
+          <div className="quest-detail-header">
+            <button
+              type="button"
+              className={`quest-stamp${quest.completed ? " quest-stamp--done" : ""}`}
+              aria-pressed={quest.completed}
+              aria-label="Toggle quest complete"
+              title="Toggle quest complete"
+              onClick={() => void handleToggle()}
+            >
+              {quest.completed && (
+                <span className="quest-stamp-glyph" aria-hidden="true">
+                  ✓
+                </span>
+              )}
+            </button>
+            <div className="quest-detail-headings">
+              <div className="quest-detail-title-row">
+                {isEditing ? (
+                  <>
+                    {/* The visible <h2> is swapped out for the input, so keep a heading in
+                        the document outline. It tracks the draft: someone who jumps to the
+                        heading mid-edit should hear what is on screen, not a saved title
+                        that is visible nowhere. */}
+                    <h2 className="visually-hidden">{editTitle || quest.title}</h2>
+                    <input
+                      ref={titleInputRef}
+                      className={`quest-detail-title-input${editError ? " quest-detail-title-input--error" : ""}`}
+                      value={editTitle}
+                      disabled={isSavingThisQuest}
+                      maxLength={100}
+                      onChange={(e) => {
+                        setEditTitle(e.target.value);
+                        // Only a value that would actually pass the commit check clears
+                        // the message: isTitleEmpty trims, so typing a space would
+                        // otherwise drop the error and the red outline while the button
+                        // stayed aria-disabled and tooltipped "Title required".
+                        if (editError && e.target.value.trim() !== "") setEditError(null);
+                      }}
+                      onKeyDown={handleTitleKeyDown}
+                      aria-label="Quest title"
+                      aria-describedby={editError ? errorId : undefined}
+                    />
+                  </>
+                ) : (
                   <h2 className="quest-detail-title">
                     <span className="quest-detail-dropcap">{dropCap}</span>
                     <span className="quest-detail-title-rest">{titleRest}</span>
                   </h2>
-                  <button
-                    type="button"
-                    className="quest-detail-edit-button"
-                    onClick={startEdit}
-                    aria-label="Edit quest"
-                    title="Edit quest"
-                  >
+                )}
+                {/* The accessible name is the action and stays the action; the reason the
+                    action is currently blocked travels on aria-describedby instead, which
+                    also stops the name mutating on every keystroke that crosses the empty
+                    boundary. The tooltip still names the blocker for pointer users. */}
+                <button
+                  ref={editButtonRef}
+                  type="button"
+                  className={`quest-detail-edit-button${isEditing ? " quest-detail-edit-button--save" : ""}`}
+                  onClick={handleEditButtonClick}
+                  onKeyDown={handleEditButtonKeyDown}
+                  disabled={isSaving}
+                  aria-disabled={isTitleEmpty}
+                  aria-label={isEditing ? "Save changes" : "Edit quest"}
+                  aria-describedby={editError ? errorId : undefined}
+                  title={
+                    isTitleEmpty ? "Title required" : isEditing ? "Save changes" : "Edit quest"
+                  }
+                >
+                  {isEditing ? (
+                    <span className="quest-detail-save-glyph" aria-hidden="true">
+                      ✓
+                    </span>
+                  ) : (
                     <PencilIcon />
-                  </button>
-                </div>
-                <div className="quest-detail-meta">
-                  Arc: {arcTitle ?? "Unassigned"} ·{" "}
-                  {quest.completed
-                    ? completedOnLabel
-                      ? `Completed ${completedOnLabel}`
-                      : "Completed"
-                    : "Active"}
-                </div>
+                  )}
+                </button>
+              </div>
+              {/* Its own line under the title row: that row is a flex row, and an inline
+                  span there would squeeze the input. role="alert" because nothing else
+                  announces it -- when Enter triggers it focus is on the input, and an
+                  aria-disabled flip on an unfocused button is announced by nothing. The
+                  id backs the aria-describedby on both controls that can trigger it. */}
+              {isEditing && editError && (
+                <span className="quest-detail-title-error" id={errorId} role="alert">
+                  {editError}
+                </span>
+              )}
+              <div className="quest-detail-meta">
+                Arc: {arcTitle ?? "Unassigned"} ·{" "}
+                {quest.completed
+                  ? completedOnLabel
+                    ? `Completed ${completedOnLabel}`
+                    : "Completed"
+                  : "Active"}
               </div>
             </div>
-          )}
+          </div>
 
           {isEditing ? (
-            <>
-              <textarea
-                className="quest-detail-description-input"
-                value={editDescription}
-                disabled={isSaving}
-                rows={6}
-                placeholder="Description"
-                maxLength={1000}
-                onChange={(e) => {
-                  setEditDescription(e.target.value);
-                }}
-                onKeyDown={handleDescriptionKeyDown}
-                aria-label="Quest description"
-              />
-              <div className="quest-detail-edit-actions">
-                <button
-                  type="button"
-                  className="quest-detail-save-button"
-                  onClick={() => void commitEdit()}
-                  disabled={isSaving || editTitle.trim() === ""}
-                >
-                  {isSaving ? "Saving…" : "Save"}
-                </button>
-                <button
-                  type="button"
-                  className="quest-detail-cancel-button"
-                  onClick={cancelEdit}
-                  disabled={isSaving}
-                >
-                  Cancel
-                </button>
-              </div>
-            </>
+            <textarea
+              ref={descriptionInputRef}
+              className="quest-detail-description-input"
+              value={editDescription}
+              disabled={isSavingThisQuest}
+              rows={4}
+              placeholder="Description"
+              maxLength={1000}
+              onChange={(e) => {
+                setEditDescription(e.target.value);
+              }}
+              onKeyDown={handleDescriptionKeyDown}
+              aria-label="Quest description"
+            />
           ) : (
-            <>
-              {reminder && <div className="quest-detail-reminder">{reminder}</div>}
-
-              <p className="description-text">
-                {quest.description || <em className="empty-description">No description.</em>}
-              </p>
-
-              <div className="quest-detail-subtasks-label">SUBTASKS</div>
-              <div className="quest-detail-subtask-card">
-                <span className="quest-detail-subtask-empty">No subtasks yet.</span>
-              </div>
-            </>
+            <p className="description-text">
+              {quest.description || <em className="empty-description">No description.</em>}
+            </p>
           )}
+
+          <div className="quest-detail-subtasks-label">SUBTASKS</div>
+          <div className="quest-detail-subtask-card">
+            <span className="quest-detail-subtask-empty">No subtasks yet.</span>
+          </div>
         </>
       ) : (
         <p className="quest-detail-empty-state">Select a quest to see its details.</p>

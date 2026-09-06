@@ -1,0 +1,53 @@
+---
+name: project_frontend_patterns
+description: Established frontend conventions for the Quests React/TypeScript project — patterns to enforce during reviews
+type: project
+---
+
+Key conventions confirmed from reading the codebase:
+
+- All child components wrapped in `React.memo`; all handlers in `App.tsx` wrapped in `useCallback`
+- Two distinct error states in `App.tsx`: `error` (initial fetch failure) and `mutationError` (create/update/delete failures)
+- Error propagation pattern: child catches, re-throws; parent sets `mutationError` via `catchMutationError`
+- All mutation handlers in `App.tsx` call `setMutationError(null)` on success
+- `arcsRef` pattern: a `useRef` mirroring `arcs` state, used inside async handlers to safely read latest arc list without stale closure issues
+- State updates after mutations update both `arcs` (via `setArcs`) AND `selectedQuest` (via `setSelectedQuest`) where relevant
+- API layer: `request()` helper throws on non-ok responses; all functions return typed values; snake_case→camelCase mapping via `RawArc`/`RawQuest` types
+- `updateArc` returns `void` (no body); `updateQuest` should also return `void` (204 from backend)
+- In-flight guards (`commitInFlightRef`, `createQuestInFlightRef`) used in `ArcCard` to prevent double-submit; not yet established as a universal pattern but worth applying to new interactive components
+- Accessibility requirements: `<button>` not divs, `aria-label` on all interactive elements, focus rings via the `--qj-focus-ring` / `--qj-focus-ring-inverse` tokens in `index.css` (NOT the literal `2px solid #4f46e5` that CLAUDE.md still claims — that bullet is stale as of 2026-09-06), Enter key on inputs
+- Stub/placeholder code paths are tolerated when commented as deliberate scaffolding — do not report these as dead code more than once. (`getReminder()` in `QuestDetail` was the standing example; it and the reminder callout were deleted in the 2026-09 inline-edit change, along with the `--qj-done-bg`/`--qj-done-border`/`--qj-reminder-ink`/`--qj-card-hover` tokens.)
+- CLAUDE.md drifts behind the frontend section faster than anywhere else (it has repeatedly described removed things like `arcsRef`, `fetchArcs`, and "Mark as Complete placeholder"). Spot-check the CLAUDE.md frontend bullets against `api.ts` exports and `features/arcs/` on any review that touches them
+- `createQuest` in `api.ts` posts to `POST /arcs/{arcId}/quests` — re-confirmed 2026-08-09 (an earlier memory claiming `/quests` was wrong)
+- `updateQuest` in `api.ts` uses `PATCH /quests/{id}` — confirmed matches backend `@app.patch("/quests/{quest_id}")`
+- `QuestDetail` uses `prevQuestIdRef` to gate `useEffect` reset so field values only reset on quest ID change, not on every re-render with same quest object
+- `commitInFlightRef` guard pattern is now established in both `ArcCard` and `QuestDetail`
+- State was refactored out of `App.tsx` into feature hooks under `frontend/src/features/arcs/`: `useArcs` (arcs/loading/error + mutations, exposes raw `setArcs`), `useQuests(setArcs)` (quest mutations via injected setter), `useSelectedQuest(arcs)` (selection + reconcile-during-render), `useMutationError` (runMutation wrapper). The old `arcsRef` is gone — mutation handlers now use functional `setArcs((prev) => ...)` updates instead, which is the preferred pattern.
+- `useSelectedQuest` reconciles selection during render (adjusting-state-during-render idiom): computes reconciled value, returns it same-render, and only calls setState when the reference differs. Its equality check manually lists every user-visible field (title/description/arcId/completed/completedOn as of 2026-08-09) — ALWAYS verify a new `Quest` field was added here, or the detail panel silently renders stale data.
+
+**PITFALL (combined mutation error):** If two hooks each own an independent `useMutationError` instance and `App` merges them read-side (e.g. `arcMutationError ?? questMutationError`), a successful mutation in one hook does NOT clear a pending error from the other — diverges from the original single shared `mutationError` where every success called `setMutationError(null)`. Flag this: prefer a single shared `useMutationError()` in `App` passed into both hooks. RESOLVED as of 2026-08: `App.tsx` now creates one `useMutationError()` and injects `runMutation` into both `useArcs` and `useQuests`. Keep it that way.
+
+**RECURRING BUG TO CHECK — unhandled rejection from `void p.finally(...)`:** `runMutation` re-throws after setting `mutationError`, so every handler it returns is a rejecting promise. Components must catch it (`try/catch` in an async handler, as `QuestRow.handleToggle` and `QuestDetail.handleToggle`/`commitEdit` do). Writing `void onSomething(...).finally(() => setBusy(false))` in an `onClick` does NOT handle the rejection — `.finally` forwards it — and eslint's `no-floating-promises` is silenced by the `void`, so lint will not catch it. Occurred once in `QuestDetail`'s complete-toggle button (fixed 2026-08-09). Check every new `void ....finally(` in JSX handlers by reasoning about the chain, never by trusting a clean lint run.
+
+**Optimistic-update rollback rule:** optimistic quest mutations in `useQuests` patch only the fields they own (so concurrent edits are not clobbered), and roll back from a snapshot of the pre-mutation quest when the handler's own arguments cannot reconstruct it (e.g. `toggleComplete(questId, completed)` cannot restore `completedOn`).
+**Corollary to check:** a snapshot rollback that writes the WHOLE quest back (`replaceQuest`) undoes concurrent edits to fields the mutation never owned — the rollback must stay field-scoped (`patchQuest` with only the snapshot's owned fields) or it contradicts the success path's own no-clobber invariant.
+
+**In-flight guards must route through `runMutation`:** a bare `return Promise.resolve()` early-exit skips `setMutationError(null)`, so a stale error from an earlier failure never clears. Use `runMutation(() => Promise.resolve())` for legitimate no-ops. The guard flag must be set synchronously — `runMutation` invokes its callback synchronously up to the first `await`, so `ref.add(id)` at the top of the callback is race-free against a second click in a later event.
+
+**Snapshot-inside-updater idiom (`useQuests.toggleComplete`):** the pre-mutation quest is captured inside the `setArcs` updater into a holder object (`const snapshot: { quest: Quest | null }`) using `??=`. The holder exists because TS narrows a closure-assigned `let` to `null`; the `??=` makes the side effect idempotent under StrictMode's double-invoked updaters. It is sound but depends on React flushing the updater before the network promise settles (it does, since the flush microtask is queued before the `await`). If a future change reintroduces a synchronously-rejecting mutation, re-check that the snapshot is populated before the catch.
+
+**RECURRING CHECK — `disabled` blurs to `<body>` and nothing restores focus:** the codebase already documents this for the completion toggles (`QuestRow.handleToggle` comment) but it keeps reappearing on save controls: any control or field carrying `disabled={isSaving}` blurs the keyboard user to `<body>` for the duration of the round trip, and on *failure* the control re-enables with focus still on `<body>` — so the field the user must fix, and the Escape-to-cancel path, are both unreachable without tabbing from the document start. When a save button is legitimately disabled (the double-submit guard is `commitInFlightRef`, so disabling is a design choice, not a necessity), check that focus is explicitly restored when the busy flag clears. Applies to `QuestDetail` and `ArcCard` inline editors.
+
+**CSS variant-class cascade (`--save`-style modifiers):** modifier classes have the same specificity as the base class, so a base rule like `.x:hover` (0,2,0) beats `.x--variant` (0,1,0) and even ties `.x--variant:hover`. The project's fix is to exclude states from the base rule (`.x:hover:not(:disabled)`) and place the modifier after it. Verify idle/hover/disabled/focus-visible individually. Also check what the modifier does NOT override: `.quest-detail-edit-button` sets `opacity: 0.7`, which the `--save` variant inherits and which drags the green check below the WCAG text-contrast floor.
+
+**Icon/glyph contrast:** this team has deliberately overridden the design mock for contrast before (see the `--qj-active-ring` comment on `.quest-stamp`), so contrast findings on icon-only controls are in scope and welcome. Compute the effective color including any inherited `opacity` — that is where the failures hide. Corollary: a `[aria-disabled="true"]` control that still fires its handler is *operable*, so WCAG 1.4.11's "inactive component" exemption does not cover it — dimming it with the same `opacity: 0.5` rule as `:disabled` is a real contrast failure, unlike the genuinely-inactive `:disabled` case.
+
+**RECURRING CHECK — post-`await` state writes are not guarded by an identity check:** `ArcCard.commitEdit` and `QuestDetail.commitEdit` both write component state after the mutation resolves without re-checking that the component still describes the same entity. In `QuestDetail` the selection can change mid-flight (the left panel stays interactive during a save), so the stale continuation can close an editor the user reopened for a *different* quest, discard their draft, and — since it also sets `pendingFocusRef` — pull focus into the detail panel. Whenever a new `await` appears in one of these editors, check for a `if (prevQuestIdRef.current !== capturedId) return;` style guard before the state writes, and check that per-component busy flags (`isSaving`) are not applied to a different entity's freshly-rendered fields.
+
+**Inline validation errors are visually-only (standing a11y gap):** the `editError` span in `ArcCard` and `QuestDetail` has no `role`/`aria-live` and nothing points `aria-describedby` at it, so an empty-title rejection is silent for screen readers — an `aria-disabled` state flip on an *unfocused* button announces nothing, so "the button carries the signal" is not a valid substitute. Raise it once per new instance of the pattern, with the fix being `useId` + `aria-describedby` on the input plus a live region (`role="alert"`).
+
+**Accessible names should describe the action, not the blocked state:** flag `aria-label` values that swap the verb out for a validation message (e.g. "Save changes" → "Title required"); the name should stay stable and the reason should ride on `aria-describedby`.
+
+**Why:** Conventions established across PRs #9 and #10 and visible in ArcCard.tsx, App.tsx, and api.ts.
+
+**How to apply:** Flag any deviation from these patterns as a consistency issue during reviews.
