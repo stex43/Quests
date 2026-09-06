@@ -18,22 +18,22 @@
   text-align: left;
   padding: 8px 12px;
   border: none;
-  border-radius: 60px 12px 55px 8px / 10px 45px 8px 50px;
+  border-radius: var(--qj-radius-arc);
   background: linear-gradient(
     90deg,
     transparent 0%,
-    #c6c8ccaa 6%,
-    #c6c8cc 14%,
-    #c6c8cc 50%,
-    #c6c8ccaa 72%,
+    var(--qj-arc-pill-soft) 6%,
+    var(--qj-arc-pill) 14%,
+    var(--qj-arc-pill) 50%,
+    var(--qj-arc-pill-soft) 72%,
     transparent 100%
   );
-  font-family: "Cinzel", serif;
+  font-family: var(--qj-font-heading);
   font-weight: 600;
   font-size: 17px;
-  color: #454b6e;
+  color: var(--qj-ink-heading);
   letter-spacing: 1px;
-  text-shadow: 0 1px 0 #e8e2d2;
+  text-shadow: 0 1px 0 var(--qj-arc-pill-highlight);
   user-select: none;
 }
 
@@ -42,14 +42,14 @@
 }
 
 .arc-expand-area:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
 .arc-chevron {
   display: inline-block;
   font-size: 12px;
-  color: #454b6e;
+  color: var(--qj-ink-heading);
   flex-shrink: 0;
   transition: transform 0.15s ease;
 }
@@ -66,33 +66,33 @@
 
 .arc-title-input {
   flex: 1;
-  background: #efe9db;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
+  background: var(--qj-field);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
   padding: 6px 10px;
   font-size: 16px;
   font-weight: 600;
-  font-family: "Cinzel", serif;
-  color: #2b2d4a;
+  font-family: var(--qj-font-heading);
+  color: var(--qj-ink);
 }
 
 .arc-title-input:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
 .arc-title-input--error {
-  outline: 2px solid #b0553f;
+  outline: 2px solid var(--qj-error);
 }
 
 .arc-title-input--error:focus-visible {
-  outline: 2px solid #b0553f;
+  outline: 2px solid var(--qj-error);
   outline-offset: 2px;
 }
 
 .arc-title-error {
   font-size: 13px;
-  color: #b0553f;
+  color: var(--qj-error);
   white-space: nowrap;
 }
 
@@ -108,30 +108,30 @@
 
 .new-quest-input {
   flex: 1;
-  background: #efe9db;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
+  background: var(--qj-field);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
   padding: 8px 12px;
   font-size: 15px;
-  font-family: "EB Garamond", serif;
-  color: #2b2d4a;
+  font-family: var(--qj-font-body);
+  color: var(--qj-ink);
 }
 
 .new-quest-input::placeholder {
-  color: #9a9078;
+  color: var(--qj-ink-placeholder);
   font-style: italic;
 }
 
 .new-quest-input:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
 .small-add-button {
-  background: #cfc7b2;
-  color: #2b2d4a;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
+  background: var(--qj-control-soft);
+  color: var(--qj-ink);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
   width: 34px;
   height: 34px;
   font-size: 18px;
@@ -143,7 +143,7 @@
 }
 
 .small-add-button:hover {
-  background: #c2b99f;
+  background: var(--qj-control-soft-hover);
 }
 
 .small-add-button:disabled {

@@ -97,7 +97,7 @@ Alembic is configured in `backend/alembic/`. The `env.py` imports `models.Base.m
 
 ### Frontend (`frontend/src/`)
 
-Split-screen layout with a left navigation panel (300px fixed) and right detail panel.
+Split-screen layout with a left navigation panel (640px fixed) and right detail panel.
 
 **Entry (`App.tsx`)**
 - Holds no state of its own; it composes the feature hooks and wires their handlers into the two panels
@@ -113,7 +113,7 @@ Split-screen layout with a left navigation panel (300px fixed) and right detail 
 - `ArcList.tsx` — left panel container; manages arc expansion state, arc creation form, error dismissal
 - `ArcCard.tsx` — individual arc with expand/collapse, inline title editing, delete confirmation, and inline quest creation
 - `QuestRow.tsx` — single quest item with selection highlighting and delete button
-- `QuestDetail.tsx` — right panel; shows selected quest title/description with an inline editor, plus a working complete/incomplete toggle that displays the completion date as `dd.MM.yyyy`
+- `QuestDetail.tsx` — right panel; shows selected quest title/description with an inline editor. The complete/incomplete toggle is the circular wax stamp left of the title; the completion date reads as `dd.MM.yyyy` in the meta line under it
 - `icons.tsx` — reusable SVG icons (`PencilIcon`, `TrashIcon`)
 
 **API (`frontend/src/api.ts`)**
@@ -126,6 +126,7 @@ Split-screen layout with a left navigation panel (300px fixed) and right detail 
 - Uses camelCase (`arcId`, not `arc_id`) throughout
 
 **Patterns to follow**
+- Colors, fonts and radii live as `--qj-*` custom properties in `src/index.css`; component CSS references them with `var()` rather than hard-coding literals
 - `React.memo` on all child components; `useCallback` on every handler returned from a feature hook
 - Separate `mutationError` state (distinct from fetch `error`) for create/update/delete failures
 - Error propagation: child catches, re-throws to parent via callback; parent sets `mutationError`

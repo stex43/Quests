@@ -6,9 +6,13 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-  background: radial-gradient(ellipse at 50% -10%, #242119 0%, #14120f 60%);
-  color: #2b2d4a;
-  font-family: "EB Garamond", serif;
+  background: radial-gradient(
+    ellipse at 50% -10%,
+    var(--qj-backdrop-glow) 0%,
+    var(--qj-backdrop-deep) 60%
+  );
+  color: var(--qj-ink);
+  font-family: var(--qj-font-body);
 }
 
 .app-header {
@@ -16,7 +20,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 8px 16px;
-  border-bottom: 2px solid #5f594a;
+  border-bottom: 2px solid var(--qj-panel-border);
 }
 
 .app-header-brand {
@@ -26,19 +30,19 @@
 }
 
 .app-header-title {
-  font-family: "Cinzel Decorative", serif;
+  font-family: var(--qj-font-display);
   font-weight: 900;
   font-size: 34px;
-  color: #b8ad8e;
+  color: var(--qj-gilt);
   letter-spacing: 2px;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 .app-header-subtitle {
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-style: italic;
   font-size: 16px;
-  color: #6d7590;
+  color: var(--qj-subtitle);
 }
 
 .app-header-nav {
@@ -47,19 +51,19 @@
 }
 
 .app-nav-tab {
-  font-family: "Cinzel", serif;
+  font-family: var(--qj-font-heading);
   font-size: 15px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #565d78;
+  color: var(--qj-ink-muted);
   padding-bottom: 10px;
   border-bottom: 2px solid transparent;
   user-select: none;
 }
 
 .app-nav-tab--active {
-  color: #b8ad8e;
-  border-bottom-color: #b8ad8e;
+  color: var(--qj-gilt);
+  border-bottom-color: var(--qj-gilt);
 }
 
 .app-body {
@@ -72,10 +76,14 @@
 
 .app-status-text {
   padding: 40px 56px;
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-size: 18px;
-  color: #b8ad8e;
-  background: radial-gradient(ellipse at 50% -10%, #242119 0%, #14120f 60%);
+  color: var(--qj-gilt);
+  background: radial-gradient(
+    ellipse at 50% -10%,
+    var(--qj-backdrop-glow) 0%,
+    var(--qj-backdrop-deep) 60%
+  );
   min-height: 100vh;
   margin: 0;
   box-sizing: border-box;

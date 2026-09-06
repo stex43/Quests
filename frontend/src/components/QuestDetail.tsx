@@ -17,6 +17,8 @@ function getReminder(): string | null {
   return null;
 }
 
+const NBSP = "\u00a0";
+
 // Reshapes the server's YYYY-MM-DD into dd.MM.yyyy. Purely textual on purpose: the value
 // is a calendar day with no time zone, and `new Date("2026-01-01")` would read it as UTC
 // midnight and render the previous day for anyone west of UTC. Returns null for a missing
@@ -39,7 +41,6 @@ export const QuestDetail = memo(function QuestDetail({
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isToggling, setIsToggling] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const commitInFlightRef = useRef(false);
   const prevQuestIdRef = useRef<string | null>(null);
@@ -47,7 +48,6 @@ export const QuestDetail = memo(function QuestDetail({
   useEffect(() => {
     if (quest?.id !== prevQuestIdRef.current) {
       setIsEditing(false);
-      setIsToggling(false);
       setEditTitle(quest?.title ?? "");
       setEditDescription(quest?.description ?? "");
       prevQuestIdRef.current = quest?.id ?? null;
@@ -96,15 +96,15 @@ export const QuestDetail = memo(function QuestDetail({
     }
   }, [quest, editTitle, editDescription, onUpdate]);
 
+  // Stays enabled during the round trip for the reason spelled out in QuestRow: a
+  // disabled button flicks the pointer to an arrow and back. useQuests.toggleComplete
+  // holds the double-submit guard.
   const handleToggle = useCallback(async () => {
     if (!quest) return;
-    setIsToggling(true);
     try {
       await onToggleComplete(quest.id, quest.completed);
     } catch {
       // error displayed by parent via mutationError
-    } finally {
-      setIsToggling(false);
     }
   }, [quest, onToggleComplete]);
 
@@ -132,7 +132,11 @@ export const QuestDetail = memo(function QuestDetail({
   // (e.g. an emoji) isn't torn into broken surrogate halves.
   const titleChars = quest ? Array.from(quest.title) : [];
   const dropCap = titleChars[0] ?? "";
-  const titleRest = titleChars.slice(1).join("");
+  const rest = titleChars.slice(1).join("");
+  // This span starts at the title's second character and is its own flex item,
+  // so it begins a line box -- where a leading space would be stripped and
+  // "A New Hope" would lose its word space. A NBSP survives that.
+  const titleRest = rest.startsWith(" ") ? NBSP + rest.slice(1) : rest;
 
   return (
     <div className="quest-detail-panel">
@@ -155,26 +159,47 @@ export const QuestDetail = memo(function QuestDetail({
               />
             </div>
           ) : (
-            <>
-              <div className="quest-detail-title-row">
-                <h2 className="quest-detail-title">
-                  <span className="quest-detail-dropcap">{dropCap}</span>
-                  <span className="quest-detail-title-rest">{titleRest}</span>
-                </h2>
-                <button
-                  type="button"
-                  className="icon-button"
-                  onClick={startEdit}
-                  aria-label="Edit quest"
-                  title="Edit quest"
-                >
-                  <PencilIcon />
-                </button>
+            <div className="quest-detail-header">
+              <button
+                type="button"
+                className={`quest-stamp${quest.completed ? " quest-stamp--done" : ""}`}
+                aria-pressed={quest.completed}
+                aria-label="Toggle quest complete"
+                title="Toggle quest complete"
+                onClick={() => void handleToggle()}
+              >
+                {quest.completed && (
+                  <span className="quest-stamp-glyph" aria-hidden="true">
+                    ✓
+                  </span>
+                )}
+              </button>
+              <div className="quest-detail-headings">
+                <div className="quest-detail-title-row">
+                  <h2 className="quest-detail-title">
+                    <span className="quest-detail-dropcap">{dropCap}</span>
+                    <span className="quest-detail-title-rest">{titleRest}</span>
+                  </h2>
+                  <button
+                    type="button"
+                    className="quest-detail-edit-button"
+                    onClick={startEdit}
+                    aria-label="Edit quest"
+                    title="Edit quest"
+                  >
+                    <PencilIcon />
+                  </button>
+                </div>
+                <div className="quest-detail-meta">
+                  Arc: {arcTitle ?? "Unassigned"} ·{" "}
+                  {quest.completed
+                    ? completedOnLabel
+                      ? `Completed ${completedOnLabel}`
+                      : "Completed"
+                    : "Active"}
+                </div>
               </div>
-              <div className="quest-detail-meta">
-                Arc: {arcTitle ?? "Unassigned"} · {quest.completed ? "Completed" : "Active"}
-              </div>
-            </>
+            </div>
           )}
 
           {isEditing ? (
@@ -213,25 +238,6 @@ export const QuestDetail = memo(function QuestDetail({
             </>
           ) : (
             <>
-              <div className="quest-detail-status">
-                <button
-                  type="button"
-                  aria-pressed={quest.completed}
-                  className={`complete-button${quest.completed ? " complete-button--done" : ""}`}
-                  disabled={isToggling}
-                  onClick={() => void handleToggle()}
-                >
-                  {quest.completed ? "Mark as Incomplete" : "Mark as Complete"}
-                </button>
-                {quest.completed && (
-                  <span className="quest-detail-completed-at">
-                    {completedOnLabel
-                      ? `Completed on ${completedOnLabel}`
-                      : "Completion date unrecorded"}
-                  </span>
-                )}
-              </div>
-
               {reminder && <div className="quest-detail-reminder">{reminder}</div>}
 
               <p className="description-text">

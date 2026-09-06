@@ -1,18 +1,111 @@
+:root {
+  /* Backdrop */
+  --qj-backdrop: #1a1917;
+  --qj-backdrop-glow: #242119;
+  --qj-backdrop-deep: #14120f;
+
+  /* Panels */
+  --qj-panel-left: linear-gradient(180deg, #ded7c8, #d6cdb8);
+  --qj-panel-right: linear-gradient(180deg, #e2dcc8, #d8d0bb);
+  --qj-panel-border: #5f594a;
+  --qj-panel-seam: #5f594a99;
+  --qj-hairline: #8a806655;
+  --qj-panel-shadow: inset 0 0 0 1px #8a806655, 0 12px 30px rgba(0, 0, 0, 0.5);
+
+  /* Ink */
+  --qj-ink: #2b2d4a;
+  --qj-ink-muted: #565d78;
+  --qj-ink-soft: #6e6858;
+  --qj-ink-faint: #7c7460;
+  --qj-ink-placeholder: #9a9078;
+  --qj-ink-heading: #454b6e;
+  --qj-ink-heading-strong: #3f4362;
+  --qj-rule: #454b6e88;
+
+  /* Gilt & accents */
+  --qj-gilt: #b8ad8e;
+  --qj-subtitle: #6d7590;
+  --qj-crimson: #8a2f22;
+
+  /* Fields, cards, controls */
+  --qj-field: #efe9db;
+  --qj-field-border: #b3a37e;
+  --qj-card: #e6e0cf;
+  --qj-card-hover: #ddd6c2;
+  --qj-control: #5f594a;
+  --qj-control-hover: #4a4539;
+  --qj-control-ink: #ded7c8;
+  --qj-control-soft: #cfc7b2;
+  --qj-control-soft-hover: #c2b99f;
+  --qj-arc-pill: #c6c8cc;
+  --qj-arc-pill-soft: #c6c8ccaa;
+  --qj-arc-pill-highlight: #e8e2d2;
+
+  /* Selection */
+  --qj-selected: #5c4d6c;
+  --qj-selected-hover: #574869;
+  --qj-selected-ink: #ffffff;
+  --qj-selected-ink-soft: #ffffff66;
+  --qj-selected-icon: #e6e0ea;
+  --qj-selected-icon-wash: #ffffff22;
+
+  /* Status (from the design's STATUS_STYLE) */
+  --qj-done: #4f7a3a;
+  --qj-done-ring: #3d5c2c;
+  --qj-done-ink: #3a5028;
+  --qj-done-bg: #dce9d3;
+  --qj-done-border: #8ba374;
+  --qj-active-ring: #6b6455;
+
+  /* Glyphs */
+  --qj-stamp-glyph: #f4f1e6;
+  --qj-check-ink: #fff;
+  --qj-reminder-ink: #3d4a2f;
+
+  /* Error UI (not a quest status) */
+  --qj-error: #b0553f;
+  --qj-error-bg: #e9d6cf;
+  --qj-error-ink: #6e2a1c;
+
+  /* Washes */
+  --qj-wash: #00000010;
+  --qj-wash-strong: #00000012;
+
+  /* Focus */
+  --qj-focus-ring: 2px solid #4f46e5;
+
+  /* Type */
+  --qj-font-display: "Cinzel Decorative", serif;
+  --qj-font-heading: "Cinzel", serif;
+  --qj-font-body: "EB Garamond", serif;
+  --qj-glyph-font: "Segoe UI Symbol", "Apple Symbols", system-ui, sans-serif;
+
+  /* Shape */
+  --qj-radius: 5px;
+  --qj-radius-panel: 6px;
+  --qj-radius-arc: 60px 12px 55px 8px / 10px 45px 8px 50px;
+  --qj-radius-quest-selected: 40px 10px 35px 8px / 8px 30px 8px 35px;
+}
+
 button {
   font-family: inherit;
   font-size: inherit;
 }
 
 body {
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-size: 15px;
-  color: #2b2d4a;
+  color: var(--qj-ink);
   margin: 0;
-  background: #14120f;
+  background: var(--qj-backdrop);
+}
+
+::selection {
+  background: var(--qj-hairline);
 }
 
 :focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
@@ -21,7 +114,7 @@ body {
   border: none;
   cursor: pointer;
   padding: 4px;
-  color: #6e6858;
+  color: var(--qj-ink-soft);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -30,8 +123,8 @@ body {
 }
 
 .icon-button:hover {
-  color: #2b2d4a;
-  background: #00000012;
+  color: var(--qj-ink);
+  background: var(--qj-wash-strong);
 }
 
 .icon-button:disabled {

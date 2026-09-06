@@ -3,13 +3,11 @@
   overflow-y: auto;
   position: relative;
   padding: 34px 44px;
-  background: linear-gradient(180deg, #e2dcc8, #d8d0bb);
-  border: 3px solid #5f594a;
-  border-left: 1px solid #5f594a99;
-  border-radius: 0 6px 6px 0;
-  box-shadow:
-    inset 0 0 0 1px #8a806655,
-    0 12px 30px rgba(0, 0, 0, 0.5);
+  background: var(--qj-panel-right);
+  border: 3px solid var(--qj-panel-border);
+  border-left: 1px solid var(--qj-panel-seam);
+  border-radius: 0 var(--qj-radius-panel) var(--qj-radius-panel) 0;
+  box-shadow: var(--qj-panel-shadow);
 }
 
 .quest-detail-frame {
@@ -18,7 +16,7 @@
   left: 14px;
   right: 14px;
   bottom: 14px;
-  border: 1px solid #454b6e88;
+  border: 1px solid var(--qj-rule);
   border-radius: 3px;
   pointer-events: none;
 }
@@ -29,11 +27,23 @@
   z-index: 1;
 }
 
+/* Stamp on the left, title + meta stacked in the column beside it. */
+.quest-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.quest-detail-headings {
+  flex: 1;
+  min-width: 0;
+}
+
 .quest-detail-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  margin-bottom: 6px;
 }
 
 .quest-detail-title {
@@ -46,138 +56,165 @@
 }
 
 .quest-detail-dropcap {
-  font-family: "Cinzel Decorative", serif;
+  font-family: var(--qj-font-display);
   font-weight: 900;
   font-size: 44px;
-  color: #8a2f22;
+  color: var(--qj-crimson);
   line-height: 1;
 }
 
 .quest-detail-title-rest {
-  font-family: "Cinzel", serif;
+  font-family: var(--qj-font-heading);
   font-weight: 700;
   font-size: 30px;
-  color: #2b2d4a;
+  color: var(--qj-ink);
+  /* Long unbroken titles must break rather than widen the panel. */
+  min-width: 0;
+  overflow-wrap: anywhere;
   letter-spacing: 0.5px;
 }
 
 .quest-detail-meta {
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-style: italic;
   font-size: 14px;
-  color: #565d78;
-  margin: 0 0 22px 60px;
+  color: var(--qj-ink-muted);
+  margin: 6px 0 22px 2px;
 }
 
 .quest-detail-reminder {
-  background: #dce9d3;
-  border: 1px solid #8ba374;
-  border-radius: 5px;
+  background: var(--qj-done-bg);
+  border: 1px solid var(--qj-done-border);
+  border-radius: var(--qj-radius);
   padding: 14px 18px;
   margin-bottom: 26px;
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-size: 15.5px;
-  color: #3d4a2f;
+  color: var(--qj-reminder-ink);
   line-height: 1.5;
 }
 
-/* Owns the spacing below the toggle so the completion date can sit beside it. */
-.quest-detail-status {
+/* The wax stamp: hollow ring while the deed is open, filled and sealed when done. */
+.quest-stamp {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-bottom: 26px;
-}
-
-.complete-button {
-  background: #e6e0cf;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
-  padding: 9px 18px;
-  font-family: "Cinzel", serif;
-  font-size: 13px;
-  letter-spacing: 0.5px;
-  color: #2b2d4a;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
+  background: transparent;
+  /* The design specifies --qj-rule here, but at ~2.3:1 over the parchment it
+     falls below the 3:1 floor for a control boundary -- and this ring is the
+     only affordance while the deed is open. --qj-active-ring is ~4.2:1 and is
+     the token QuestRow already uses for the same open-status role. */
+  border: 3px solid var(--qj-active-ring);
 }
 
-.complete-button:hover {
-  background: #ddd6c2;
+.quest-stamp--done {
+  background: var(--qj-done);
+  border-color: var(--qj-done-ring);
 }
 
-.complete-button:focus-visible {
-  outline: 2px solid #4f46e5;
+.quest-stamp-glyph {
+  color: var(--qj-stamp-glyph);
+  font-family: var(--qj-glyph-font);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* brightness() alone barely reads on the hollow stamp, so the open state
+   darkens its ring instead to keep the control discoverable. */
+.quest-stamp:hover {
+  border-color: var(--qj-ink-heading);
+}
+
+.quest-stamp--done:hover {
+  border-color: var(--qj-done-ring);
+  filter: brightness(1.06);
+}
+
+.quest-stamp:focus-visible {
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
-.complete-button--done {
-  background: #dce9d3;
-  border-color: #8ba374;
-  color: #3a5028;
+.quest-detail-edit-button {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-left: 14px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--qj-ink-muted);
+  opacity: 0.7;
 }
 
-.complete-button--done:hover {
-  background: #cfe0c3;
+.quest-detail-edit-button svg {
+  width: 18px;
+  height: 18px;
 }
 
-.complete-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.quest-detail-edit-button:hover {
+  opacity: 1;
+  color: var(--qj-crimson);
 }
 
-.quest-detail-completed-at {
-  font-family: "EB Garamond", serif;
-  font-style: italic;
-  font-size: 14px;
-  color: #3a5028;
-  background: #dce9d3;
-  border: 1px solid #8ba374;
-  border-radius: 5px;
-  padding: 5px 12px;
+.quest-detail-edit-button:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
 }
 
 .description-text {
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-size: 16.5px;
   line-height: 1.75;
-  color: #2b2d4a;
+  color: var(--qj-ink);
   margin: 0 0 30px 0;
 }
 
 .empty-description {
-  color: #7c7460;
+  color: var(--qj-ink-faint);
 }
 
 .quest-detail-subtasks-label {
-  font-family: "Cinzel", serif;
+  font-family: var(--qj-font-heading);
   font-weight: 600;
   font-size: 14px;
-  color: #454b6e;
+  color: var(--qj-ink-heading);
   letter-spacing: 1.5px;
   margin-bottom: 14px;
 }
 
 .quest-detail-subtask-card {
-  background: #e6e0cf;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
+  background: var(--qj-card);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
   padding: 16px 20px;
   margin-bottom: 14px;
 }
 
 .quest-detail-subtask-empty {
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-style: italic;
   font-size: 15px;
-  color: #7c7460;
+  color: var(--qj-ink-faint);
 }
 
 .quest-detail-empty-state {
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-style: italic;
   font-size: 17px;
-  color: #7c7460;
+  color: var(--qj-ink-faint);
   margin-top: 40px;
 }
 
@@ -188,37 +225,37 @@
 .quest-detail-title-input {
   width: 100%;
   box-sizing: border-box;
-  background: #efe9db;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
+  background: var(--qj-field);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
   padding: 8px 12px;
-  font-family: "Cinzel", serif;
+  font-family: var(--qj-font-heading);
   font-size: 24px;
   font-weight: 700;
-  color: #2b2d4a;
+  color: var(--qj-ink);
 }
 
 .quest-detail-title-input:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
 .quest-detail-description-input {
   width: 100%;
   box-sizing: border-box;
-  background: #efe9db;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
+  background: var(--qj-field);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
   padding: 10px 14px;
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-size: 16.5px;
-  color: #2b2d4a;
+  color: var(--qj-ink);
   line-height: 1.75;
   resize: vertical;
 }
 
 .quest-detail-description-input:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
@@ -235,19 +272,19 @@
 }
 
 .quest-detail-save-button {
-  background: #5f594a;
-  color: #ded7c8;
-  border: 1px solid #4a4539;
-  border-radius: 5px;
+  background: var(--qj-control);
+  color: var(--qj-control-ink);
+  border: 1px solid var(--qj-control-hover);
+  border-radius: var(--qj-radius);
   padding: 8px 20px;
-  font-family: "Cinzel", serif;
+  font-family: var(--qj-font-heading);
   font-size: 13px;
   letter-spacing: 0.5px;
   cursor: pointer;
 }
 
 .quest-detail-save-button:hover:not(:disabled) {
-  background: #4a4539;
+  background: var(--qj-control-hover);
 }
 
 .quest-detail-save-button:disabled {
@@ -256,24 +293,24 @@
 }
 
 .quest-detail-save-button:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
 .quest-detail-cancel-button {
-  background: #e6e0cf;
-  color: #2b2d4a;
-  border: 1px solid #b3a37e;
-  border-radius: 5px;
+  background: var(--qj-card);
+  color: var(--qj-ink);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
   padding: 8px 20px;
-  font-family: "Cinzel", serif;
+  font-family: var(--qj-font-heading);
   font-size: 13px;
   letter-spacing: 0.5px;
   cursor: pointer;
 }
 
 .quest-detail-cancel-button:hover:not(:disabled) {
-  background: #ddd6c2;
+  background: var(--qj-card-hover);
 }
 
 .quest-detail-cancel-button:disabled {
@@ -282,6 +319,6 @@
 }
 
 .quest-detail-cancel-button:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }

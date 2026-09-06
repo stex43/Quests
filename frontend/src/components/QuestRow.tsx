@@ -19,7 +19,6 @@ export const QuestRow = memo(function QuestRow({
   onToggleComplete,
 }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isToggling, setIsToggling] = useState(false);
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -32,14 +31,16 @@ export const QuestRow = memo(function QuestRow({
     }
   }
 
+  // The control is deliberately not disabled while the toggle is in flight. The
+  // optimistic flip has already landed, and a disabled button swaps the pointer for
+  // an arrow and back for the length of the round trip, which reads as the page
+  // reloading. A second click is absorbed by toggleInFlightRef in
+  // useQuests.toggleComplete, so the guard costs nothing visually.
   async function handleToggle() {
-    setIsToggling(true);
     try {
       await onToggleComplete(quest.id, quest.completed);
     } catch {
       // error displayed by parent via mutationError
-    } finally {
-      setIsToggling(false);
     }
   }
 
@@ -61,21 +62,14 @@ export const QuestRow = memo(function QuestRow({
         type="button"
         role="checkbox"
         aria-checked={quest.completed}
-        aria-label={quest.completed ? "Mark quest incomplete" : "Mark quest complete"}
+        aria-label={`Quest complete: ${quest.title}`}
         className="quest-complete-checkbox"
-        disabled={isToggling}
         onClick={() => void handleToggle()}
       >
         {quest.completed && (
-          <svg width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-            <path
-              d="M1.5 5L4 7.5L8.5 2.5"
-              stroke="white"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <span className="quest-check" aria-hidden="true">
+            ✓
+          </span>
         )}
       </button>
       <button
