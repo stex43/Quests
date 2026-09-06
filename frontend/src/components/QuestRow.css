@@ -4,33 +4,33 @@
   gap: 12px;
   padding: 10px 14px;
   margin: 2px 0;
-  border-radius: 5px;
+  border-radius: var(--qj-radius);
   background: transparent;
   border: 1px solid transparent;
 }
 
 .quest-row:hover {
-  background: #00000010;
+  background: var(--qj-wash);
 }
 
 .quest-row[data-selected="true"] {
-  background: #5c4d6c;
-  border-radius: 40px 10px 35px 8px / 8px 30px 8px 35px;
+  background: var(--qj-selected);
+  border-radius: var(--qj-radius-quest-selected);
 }
 
 .quest-row[data-selected="true"]:hover {
-  background: #574869;
+  background: var(--qj-selected-hover);
 }
 
 .quest-accent {
   width: 2px;
   align-self: stretch;
   flex: none;
-  background: #454b6e88;
+  background: var(--qj-rule);
 }
 
 .quest-row[data-selected="true"] .quest-accent {
-  background: #ffffff66;
+  background: var(--qj-selected-ink-soft);
 }
 
 .quest-select-area {
@@ -47,36 +47,38 @@
 }
 
 .quest-select-area:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 .quest-title {
   flex: 1;
-  font-family: "EB Garamond", serif;
+  font-family: var(--qj-font-body);
   font-size: 18.5px;
-  color: #2b2d4a;
+  color: var(--qj-ink);
 }
 
 .quest-title[data-completed="true"] {
-  color: #3a5028;
+  color: var(--qj-done-ink);
   text-decoration: line-through;
 }
 
 .quest-row[data-selected="true"] .quest-title,
 .quest-row[data-selected="true"] .quest-title[data-completed="true"] {
-  color: #ffffff;
+  color: var(--qj-selected-ink);
 }
 
 /* Status circle doubles as the accessible complete toggle. Completed shows a
    green ring with a check; active shows a faint always-visible ring (so the
-   toggle stays discoverable on touch/at-rest) that strengthens on hover/focus. */
+   toggle stays discoverable on touch/at-rest) that strengthens on hover/focus.
+   The design hides the circle entirely for active items, but there it is a
+   static indicator rather than the only way to complete a quest from the list. */
 .quest-complete-checkbox {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  border: 2px solid #8a806655;
+  border: 2px solid var(--qj-hairline);
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
@@ -84,40 +86,42 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition:
-    background 0.1s,
-    border-color 0.1s;
 }
 
 .quest-complete-checkbox[aria-checked="true"] {
-  background: #4f7a3a;
-  border-color: #3d5c2c;
+  background: var(--qj-done);
+  border-color: var(--qj-done-ring);
 }
 
 .quest-row:hover .quest-complete-checkbox[aria-checked="false"],
 .quest-complete-checkbox[aria-checked="false"]:focus-visible {
-  border-color: #6b6455;
+  border-color: var(--qj-active-ring);
 }
 
 .quest-row[data-selected="true"] .quest-complete-checkbox[aria-checked="false"] {
-  border-color: #ffffff66;
+  border-color: var(--qj-selected-ink-soft);
 }
 
 .quest-complete-checkbox:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
 
-.quest-complete-checkbox:disabled {
-  opacity: 0.5;
-  cursor: default;
+/* U+2713 is not in the EB Garamond subset, so pin a symbol stack rather than
+   letting each platform pick its own fallback face. */
+.quest-check {
+  color: var(--qj-check-ink);
+  font-family: var(--qj-glyph-font);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .quest-row[data-selected="true"] .icon-button {
-  color: #e6e0ea;
+  color: var(--qj-selected-icon);
 }
 
 .quest-row[data-selected="true"] .icon-button:hover {
-  color: #ffffff;
-  background: #ffffff22;
+  color: var(--qj-selected-ink);
+  background: var(--qj-selected-icon-wash);
 }

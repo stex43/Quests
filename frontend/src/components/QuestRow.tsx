@@ -19,7 +19,6 @@ export const QuestRow = memo(function QuestRow({
   onToggleComplete,
 }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isToggling, setIsToggling] = useState(false);
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -32,14 +31,20 @@ export const QuestRow = memo(function QuestRow({
     }
   }
 
+  // The control is deliberately not disabled while the toggle is in flight. The
+  // optimistic flip is itself the feedback, so there is nothing left to signal, and
+  // disabling a focused button blurs it to <body> -- which loses a keyboard user's
+  // place mid-toggle and never gives it back. A second click is absorbed by
+  // toggleInFlightRef in useQuests.toggleComplete, so nothing here is unguarded.
+  // The symptom that finally motivated this was narrower: a `:disabled { cursor: default }`
+  // rule, since deleted, flicked the pointer from hand to arrow and back, which reads
+  // as the page reloading. Re-adding `disabled` would no longer do that -- the reasons
+  // above are the ones that still hold.
   async function handleToggle() {
-    setIsToggling(true);
     try {
       await onToggleComplete(quest.id, quest.completed);
     } catch {
       // error displayed by parent via mutationError
-    } finally {
-      setIsToggling(false);
     }
   }
 
@@ -61,21 +66,14 @@ export const QuestRow = memo(function QuestRow({
         type="button"
         role="checkbox"
         aria-checked={quest.completed}
-        aria-label={quest.completed ? "Mark quest incomplete" : "Mark quest complete"}
+        aria-label={`Quest complete: ${quest.title}`}
         className="quest-complete-checkbox"
-        disabled={isToggling}
         onClick={() => void handleToggle()}
       >
         {quest.completed && (
-          <svg width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-            <path
-              d="M1.5 5L4 7.5L8.5 2.5"
-              stroke="white"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <span className="quest-check" aria-hidden="true">
+            ✓
+          </span>
         )}
       </button>
       <button
