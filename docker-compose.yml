@@ -21,14 +21,14 @@ services:
     command:  >
       sh -c "
       alembic upgrade head &&
-      uvicorn src.main:app --host 0.0.0.0 --port 8000
+      uvicorn src.main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000}
       "
     environment:
         APP_ENV: docker
     volumes:
-      - ./backend/src:/app/app
+      - ./backend/src:/app/src
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
     env_file:
       - ./backend/.env.docker
     depends_on:
@@ -40,6 +40,8 @@ services:
       context: ./frontend
     ports:
       - "5173:5173"
+    environment:
+      VITE_BACKEND_PORT: "${BACKEND_PORT:-8000}"
     volumes:
       - ./frontend/src:/app/src
     depends_on:
