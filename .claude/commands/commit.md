@@ -51,6 +51,23 @@ Run:
 git commit -m "<commit message>"
 ```
 
-### Step 7 — Report
+### Step 7 — Update memory
 
-Tell the user the commit was created successfully and print the commit message.
+Review the whole conversation, not only the diff, for important findings and new things worth keeping for future sessions:
+- **feedback** — corrections or confirmed approaches from the user, with the reason
+- **project** — gotchas, invariants, tooling quirks, or constraints discovered while working (convert relative dates to absolute)
+- **user** — new facts about the user's role, expertise, or preferences
+- **reference** — external resources (URLs, project ids, dashboards) that came up
+
+Skip anything the repo already records (code structure, CLAUDE.md, git history, the fix itself) and anything that only mattered to this conversation.
+
+For each finding:
+1. Check the memory directory for an existing file that covers it. If one does, update it instead of creating a duplicate. If an existing memory turned out to be wrong, fix or delete it.
+2. Otherwise write a new file in the memory directory using the standard memory frontmatter (`name`, `description`, `metadata.type`), with **Why:** and **How to apply:** lines for feedback/project memories, and `[[name]]` links to related memories.
+3. Add or update the one-line pointer in `MEMORY.md` (`- [Title](file.md) — hook`). Remove the pointer for any deleted memory.
+
+If nothing new was learned, write nothing.
+
+### Step 8 — Report
+
+Tell the user the commit was created successfully and print the commit message. Then list the memories that were added, updated, or deleted (one line each), or say that no memory changes were needed.
