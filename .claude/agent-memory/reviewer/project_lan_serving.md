@@ -15,10 +15,10 @@ The app is served from the user's laptop to other devices on the LAN, and the la
 - Settings in `backend/.env.docker` reach the app through compose `env_file` parsing, since the Dockerfile does not copy that file. Regex-valued vars must be single-quoted there.
 
 **Resolved — do not re-raise:**
+- Postgres published LAN-wide (`5432:5432`, `quests/quests`): fixed 2026-09-20. `docker-compose.yml` is now the production base and publishes no db port at all; `docker-compose.override.yml` (dev, auto-loaded) binds `127.0.0.1:5432`. `backend/.env.docker` is untracked and the password was rotated for the deploy clone.
 - Same-origin writes (e.g. /docs "Try it out") when `CORS_ORIGIN_REGEX` is empty: `_is_same_origin` now accepts an Origin whose scheme and host[:port] equal the request's already-validated Host.
 - TestClient's default Host `testserver` getting 400: `CLAUDE.md` records the convention — tests construct `TestClient(app, base_url="http://localhost")`, or set `ALLOWED_HOST_REGEX=` before importing `src.main` (the regex is captured at import time).
 
 **Still open, deliberately:**
 - `CORS_ORIGINS=["*"]` is treated literally by the guard while `CORSMiddleware` reads it as allow-all. The user was told and left it; only worth raising if someone actually sets `*`.
-- Postgres is still published LAN-wide (`5432:5432`, `quests/quests`). Pre-existing, out of scope for PR #20, fix is `127.0.0.1:5432:5432`.
 - Non-issues by design: `Host: 0.0.0.0` or a trailing-dot host gets 400; a compose service name like `backend:8000` would too, but nothing calls that way.

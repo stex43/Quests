@@ -7,6 +7,8 @@ __pycache__/
 
 # Local environment variables
 .env
+.env.*
+!.env.example
 
 # Docker artifacts
 *.log

@@ -1,0 +1,17 @@
+services:
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  backend:
+    volumes:
+      - ./backend/src:/app/src
+
+  frontend:
+    build:
+      target: dev
+    # The dev server reads this at startup; the prod image bakes it in as a build arg.
+    environment:
+      VITE_BACKEND_PORT: "${BACKEND_PORT:-8000}"
+    volumes:
+      - ./frontend/src:/app/src

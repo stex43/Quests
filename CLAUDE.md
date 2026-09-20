@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Quests is a full-stack web app with:
 - **Backend**: FastAPI + SQLAlchemy + PostgreSQL, located in `backend/`
 - **Frontend**: React 19 + TypeScript + Vite, located in `frontend/`
-- **Infrastructure**: Docker Compose manages PostgreSQL, the backend and the frontend dev server
+- **Infrastructure**: Docker Compose manages PostgreSQL, the backend and the frontend. `docker-compose.yml` is the production stack (frontend built and served by nginx); `docker-compose.override.yml`, auto-loaded by a bare `docker compose up`, swaps in the dev conveniences (Vite dev server, source mounts)
 
 ## Backend Commands
 
@@ -26,10 +26,13 @@ alembic upgrade head
 # Generate a new migration after model changes
 alembic revision --autogenerate -m "description"
 
-# Lint
+# Lint (ruff comes from requirements-dev.txt, pinned to match CI)
 ruff check src/
 ruff format src/
 ```
+
+`requirements-dev.txt` pulls in `requirements.txt` plus a pinned `ruff`. CI installs that
+same pin directly; keep the two in step or the hook and the workflow will disagree.
 
 ## Frontend Commands
 
@@ -46,14 +49,19 @@ npm run preview   # preview production build
 ## Docker (Full Stack)
 
 ```bash
-docker-compose up --build   # starts db + backend + frontend
+docker compose up --build                      # dev stack: db + backend + frontend
+docker compose -f docker-compose.yml up -d --build   # production stack
 ```
 
-The `frontend` service runs the Vite dev server on 5173 with `frontend/src` mounted, so source edits hot-reload; changes to `vite.config.ts` or dependencies need `--build`. The frontend resolves the API base URL at runtime: the host comes from `window.location` and the port from `VITE_BACKEND_PORT` (default 8000), while `VITE_BACKEND_ORIGIN` overrides both. So the app works on whatever LAN IP the page was opened on, with no rebuild (a production `vite build` still bakes in the port, but never the host). Set `BACKEND_PORT` (shell or root `.env`, default 8000) to move the backend; compose passes it to both services.
+A bare `docker compose` auto-loads `docker-compose.override.yml` on top of the base file and gives the dev stack: the `frontend` service runs the Vite dev server on 5173 with `frontend/src` mounted, `backend/src` is mounted too, and Postgres is published on `127.0.0.1:5432` (loopback only, for a local DB GUI). Source edits hot-reload; changes to `vite.config.ts` or dependencies need `--build`.
+
+Passing `-f docker-compose.yml` skips the override and gives the production stack: the frontend is built (`vite build`) and served by nginx on 5173, there are no source mounts (the images are the source of truth), and Postgres is not published at all — the backend reaches it over the compose network as host `db`.
+
+The frontend resolves the API base URL at runtime: the host comes from `window.location` and the port from `VITE_BACKEND_PORT` (default 8000), while `VITE_BACKEND_ORIGIN` overrides both. So the app works on whatever LAN IP the page was opened on, with no rebuild. In the production image `VITE_BACKEND_PORT` is baked in at build time (compose passes it as a build arg), but the host is still read from `window.location`, so the LAN-IP behaviour is unchanged. Set `BACKEND_PORT` (shell or root `.env`, default 8000) to move the backend; compose passes it to both services.
 
 ## Environment
 
-Backend reads env vars from a `.env` file (or `.env.docker` for the Docker service). Copy `backend/.env.example` to `backend/.env` and fill in values. Required vars:
+Backend reads env vars from a `.env` file (or `.env.docker` for the Docker service). Copy `backend/.env.example` to `backend/.env` and fill in values. `backend/.env.docker` is not tracked either — create it the same way, with `POSTGRES_HOST=db`; compose's `db` service reads its credentials from that file too, so both containers stay in sync. Required vars:
 
 ```
 POSTGRES_USER=
