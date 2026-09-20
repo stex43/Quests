@@ -1,7 +1,20 @@
 import type { Arc, Quest } from "./types";
 
-const BASE_URL =
-  (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? "http://localhost:8000";
+const DEFAULT_BACKEND_PORT = "8000";
+
+// Resolved per page load so the bundle holds no host: the API is reached on whatever
+// host the page was opened on, at VITE_BACKEND_PORT (empty or unset means 8000).
+// VITE_BACKEND_ORIGIN overrides both.
+function resolveBaseUrl(): string {
+  const override = import.meta.env.VITE_BACKEND_ORIGIN;
+  if (override) return override.replace(/\/+$/, "");
+
+  const envPort = import.meta.env.VITE_BACKEND_PORT;
+  const port = envPort !== undefined && envPort !== "" ? envPort : DEFAULT_BACKEND_PORT;
+  return `${window.location.protocol}//${window.location.hostname}:${port}`;
+}
+
+const BASE_URL = resolveBaseUrl();
 
 async function request(path: string, options?: RequestInit): Promise<Response> {
   const res = await fetch(`${BASE_URL}${path}`, options);

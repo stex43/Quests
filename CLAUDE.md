@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Quests is a full-stack web app with:
 - **Backend**: FastAPI + SQLAlchemy + PostgreSQL, located in `backend/`
 - **Frontend**: React 19 + TypeScript + Vite, located in `frontend/`
-- **Infrastructure**: Docker Compose manages PostgreSQL and the backend service
+- **Infrastructure**: Docker Compose manages PostgreSQL, the backend and the frontend dev server
 
 ## Backend Commands
 
@@ -46,10 +46,10 @@ npm run preview   # preview production build
 ## Docker (Full Stack)
 
 ```bash
-docker-compose up --build   # starts db + backend
+docker-compose up --build   # starts db + backend + frontend
 ```
 
-The docker-compose stack does NOT include the frontend; run it separately with `npm run dev`.
+The `frontend` service runs the Vite dev server on 5173 with `frontend/src` mounted, so source edits hot-reload; changes to `vite.config.ts` or dependencies need `--build`. The frontend resolves the API base URL at runtime: the host comes from `window.location` and the port from `VITE_BACKEND_PORT` (default 8000), while `VITE_BACKEND_ORIGIN` overrides both. So the app works on whatever LAN IP the page was opened on, with no rebuild (a production `vite build` still bakes in the port, but never the host). Set `BACKEND_PORT` (shell or root `.env`, default 8000) to move the backend; compose passes it to both services.
 
 ## Environment
 
@@ -68,7 +68,11 @@ Optional vars:
 ```
 DEBUG=False        # set to True to enable SQLAlchemy query logging
 CORS_ORIGINS=[]   # e.g. ["http://localhost:5173"]
+CORS_ORIGIN_REGEX= # defaults to a LAN-only pattern (localhost, private IPs, *.local); empty disables it; read as-is, not JSON
+ALLOWED_HOST_REGEX= # same LAN-only default, matched against the Host header; empty disables the host check
 ```
+
+Wrap custom `*_REGEX` values in single quotes: compose's `env_file` parser expands `$` and python-dotenv processes escapes inside double quotes.
 
 The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, otherwise `.env`.
 
@@ -76,14 +80,16 @@ The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, 
 
 ### Backend (`backend/src/`)
 
-- `main.py` — FastAPI app setup: CORS, exception handler registration, and router registration
+- `main.py` — FastAPI app setup: middleware, exception handler registration, and router registration
+- `middleware.py` — `LanRequestGuard`, a pure ASGI middleware: a `Host` not matching `allowed_host_regex` gets 400 (DNS-rebinding defence), and an unsafe-method request whose `Origin` is neither a CORS-allowed origin nor same-origin with the (already validated) `Host` gets 403 (no `Origin` passes, `null` does not; same-origin is what keeps Swagger's "Try it out" working when `CORS_ORIGIN_REGEX` is empty); it builds its own `ErrorResponse` bodies and is registered before `CORSMiddleware` so CORS wraps it and still answers preflights
+- Backend tests must construct `TestClient(app, base_url="http://localhost")` (or set `ALLOWED_HOST_REGEX=` before importing `src.main`), because the guard rejects the default `testserver` host with 400 and `main.py` reads the regex at import time
 - `routers/` — `arcs.py` and `quests.py` `APIRouter`s holding the route handlers
 - `dependencies.py` — `DbSession = Annotated[Session, Depends(get_db)]` alias plus the `ArcRepo`/`QuestRepo` dependency aliases; the shared `DbSession` is what keeps both repos on one session per request
 - `schemas.py` — Pydantic request/response schemas; `ConstrainedStr` (max 100) for titles, `ConstrainedText` (max 1000) for descriptions; response schemas have `model_config = ConfigDict(from_attributes=True)`
 - `repositories.py` — `ArcRepository` and `QuestRepository`; each takes `Session` in `__init__`; `create` methods call `db.refresh()` after `commit()`; `get_all` uses `selectinload` for eager loading
 - `models.py` — SQLAlchemy ORM models (`Arc`, `Quest`); `Quest.arc` has `lazy="raise"`
 - `database.py` — engine (`echo` gated on `settings.debug`), `SessionLocal`, and `get_db` with explicit rollback on exception
-- `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars; `debug: bool = False`
+- `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars; `debug: bool = False`; `cors_origin_regex` and `allowed_host_regex` default to `LAN_CORS_ORIGIN_REGEX` / `LAN_HOST_REGEX` (built from one shared host pattern) and are validated at startup (empty means off)
 - `exceptions.py` / `exception_handlers.py` — domain exceptions and the handlers registered in `main.py` that map them to `ErrorResponse` bodies; routers raise domain exceptions and never `HTTPException`, and the validation handler is what turns 422 into 400
 
 ### Data Model
@@ -117,6 +123,7 @@ Split-screen layout with a left navigation panel (640px fixed) and right detail 
 - `icons.tsx` — reusable SVG icons (`PencilIcon`, `TrashIcon`)
 
 **API (`frontend/src/api.ts`)**
+- `BASE_URL` is resolved per page load (`resolveBaseUrl()`): page host + `VITE_BACKEND_PORT` (empty or unset means 8000), or `VITE_BACKEND_ORIGIN` (trailing slashes stripped); env vars are typed in `vite-env.d.ts`
 - `request()` helper with unified error handling (includes HTTP status + body in errors)
 - All API calls convert snake_case responses to camelCase (`RawArc`, `RawQuest` types for the mapping)
 - Methods: `getArcs`, `createArc`, `updateArc`, `deleteArc`, `createQuest`, `updateQuest`, `deleteQuest`, `completeQuest`, `uncompleteQuest`

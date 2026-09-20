@@ -4,14 +4,23 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src import exception_handlers
 from src.exceptions import ConflictError, DomainError, DomainValidationError, NotFoundError
+from src.middleware import LanRequestGuard
 from src.routers import arcs, quests
 from src.settings import settings
 
 app = FastAPI()
 
+# Added before CORS so CORS wraps it: preflights are answered and error responses get CORS headers.
+app.add_middleware(
+    LanRequestGuard,
+    allowed_host_regex=settings.allowed_host_regex,
+    cors_origins=settings.cors_origins,
+    cors_origin_regex=settings.cors_origin_regex,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.cors_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
 )
