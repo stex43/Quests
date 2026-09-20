@@ -1,0 +1,3 @@
+-r requirements.txt
+# Keep this pin in step with the ruff install in .github/workflows/lint.yml.
+ruff==0.15.8
