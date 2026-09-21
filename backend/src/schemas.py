@@ -5,7 +5,6 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 
 ConstrainedStr = Annotated[str, Field(min_length=1, max_length=100)]
-ConstrainedText = Annotated[str, Field(min_length=1, max_length=1000)]
 
 
 class ErrorResponse(BaseModel):
