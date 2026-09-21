@@ -6,6 +6,8 @@ Update `main`, switch to it, and delete the branch you were working on (locally 
 - `/sync-main` — switch to `main`, pull latest, delete the branch you came from (local + remote)
 - `/sync-main old-feature-branch` — same, but delete the named branch instead of the current one
 
+After the cleanup it offers to ship `main` to the laptop by pushing a signed `deploy-*` tag. It always asks, and never tags unless you say yes.
+
 The branch to delete (if any) is: $ARGUMENTS
 
 ---
@@ -74,9 +76,50 @@ Only delete the remote branch when it is safe:
 
 If the branch was **not** merged, do NOT delete the remote branch without explicit user confirmation. If the remote branch does not exist (already deleted, e.g. by GitHub on merge), note that and move on.
 
-### Step 7 — Report
+### Step 7 — Offer to ship `main` to the laptop
+
+The laptop deploys a signed `deploy-*` tag, not a merge to `main`. Merging alone ships nothing, so ask here — once, and never without an explicit yes.
+
+**1. Fetch tags.** `git pull --prune` in Step 3 prunes branches, not tags, and does not reliably fetch every tag. Without this the name derived below can collide with one that exists only on the remote:
+```
+git fetch --tags origin
+```
+
+**2. Check that tag signing is configured:**
+```
+git config --get gpg.format
+git config --get user.signingkey
+```
+If either is empty, **skip this entire step** and tell the user that signing is not configured in this clone, so any tag pushed from here would be refused by the laptop's verification gate. Do not create an unsigned tag.
+
+**3. Derive the tag name.** Base is `deploy-YYYY-MM-DD` for today. If `git tag -l "<base>*"` already contains that name, append `-2`, then `-3`, until one is free.
+
+> Keep this convention identical to the "Ship" action in the deploy menu — if the two drift, a tag made one way collides with a tag made the other on the same day.
+
+**4. Show what would ship and ask.** Run `git log -1 --oneline main`, then print the commit and the proposed tag name and ask whether to push it. **The default is no** — anything other than an explicit yes skips to Step 8.
+
+**5. Create the tag on `main`**, signed. The repo-local git config supplies the key; do not hardcode a key path here, this file is public:
+```
+git tag -s <tag-name> main -m "Deploy <tag-name>"
+```
+
+**6. Verify before pushing**, so a bad signature is caught locally rather than after it is public:
+```
+git verify-tag <tag-name>
+```
+If verification fails, delete the local tag with `git tag -d <tag-name>`, report why, and do not push.
+
+**7. Push the tag** (only the tag):
+```
+git push origin <tag-name>
+```
+
+### Step 8 — Report
 
 Tell the user:
 - which commit `main` is now at (`git log -1 --oneline`),
 - that the working branch was deleted locally (or why it wasn't),
-- that the remote branch was deleted (or why it wasn't).
+- that the remote branch was deleted (or why it wasn't),
+- which deploy tag was pushed — or that shipping was declined or skipped, and why.
+
+If a tag was pushed, add that the laptop picks it up on its next poll, within about five minutes, unless deploys are paused.
