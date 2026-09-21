@@ -8,13 +8,14 @@ on:
 
 jobs:
   claude-review:
-    # Only run when @claude is mentioned in a comment
+    # Requires the explicit phrase "@claude review" so it does not collide with the
+    # general-purpose claude.yml workflow, which handles a bare "@claude".
     if: |
-      (github.event_name == 'issue_comment' && 
-       github.event.issue.pull_request != null && 
-       contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && 
-       contains(github.event.comment.body, '@claude'))
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       contains(github.event.comment.body, '@claude review')) ||
+      (github.event_name == 'pull_request_review_comment' &&
+       contains(github.event.comment.body, '@claude review'))
     runs-on: ubuntu-latest
     
     permissions:

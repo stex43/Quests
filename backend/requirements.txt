@@ -1,6 +1,10 @@
-pydantic-settings
-pydantic>=2.0
-fastapi[standard]>=0.111.0
-sqlalchemy>=2.0
-psycopg[binary]>=3.1
-alembic
+# Pinned to the versions the deployed image has been running. The deploy builds the
+# image from source at tag-checkout time, so unpinned ranges would let the dependency
+# tree drift independently of the signed tag. Transitive deps are still resolved by pip;
+# a full lockfile (pip-tools / uv) would be the next step.
+pydantic-settings==2.15.0
+pydantic==2.13.5
+fastapi[standard]==0.141.1
+sqlalchemy==2.0.54
+psycopg[binary]==3.3.6
+alembic==1.20.0
