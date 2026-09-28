@@ -1,6 +1,6 @@
 # Pinned to the versions the deployed image has been running. The deploy builds the
-# image from source at tag-checkout time, so unpinned ranges would let the dependency
-# tree drift independently of the signed tag. Transitive deps are still resolved by pip;
+# image from source, so unpinned ranges would let the dependency tree drift
+# independently of the code being deployed. Transitive deps are still resolved by pip;
 # a full lockfile (pip-tools / uv) would be the next step.
 pydantic-settings==2.15.0
 pydantic==2.13.5
