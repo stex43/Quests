@@ -111,6 +111,59 @@
   color: var(--qj-error);
 }
 
+/* Its own line under the title, wrapping internally: .arc-list-panel clips rather than
+   scrolls, so the buttons must never be pushed past the panel edge. */
+.arc-delete-confirm {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 2px 12px 0;
+}
+
+.arc-delete-confirm-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  color: var(--qj-error-ink);
+}
+
+.arc-delete-confirm-button {
+  background: var(--qj-control-soft);
+  color: var(--qj-ink);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
+  padding: 4px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.arc-delete-confirm-button:hover:not(:disabled) {
+  background: var(--qj-control-soft-hover);
+}
+
+.arc-delete-confirm-button--danger {
+  background: var(--qj-crimson);
+  color: var(--qj-control-ink);
+  border-color: var(--qj-crimson);
+}
+
+.arc-delete-confirm-button--danger:hover:not(:disabled) {
+  background: var(--qj-error-ink);
+}
+
+.arc-delete-confirm-button:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+}
+
+.arc-delete-confirm-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .quest-list {
   padding: 2px 0 0;
 }

@@ -104,6 +104,7 @@ The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, 
 
 - **Arc**: a story arc with a title; has many Quests (cascade delete)
 - **Quest**: belongs to an Arc via `arc_id` FK; has title, description, a `completed` flag, and a nullable `completed_on` date — the completer's local calendar day, resolved server-side from a client-supplied UTC offset (the time of day is deliberately not stored)
+- Both have a server-set `created_at` (not exposed in the API) that fixes list order: arcs newest first, quests oldest first, `id` as tiebreaker — matching the frontend prepending new arcs and appending new quests
 
 ### Migrations
 

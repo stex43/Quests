@@ -6,20 +6,19 @@ type: project
 
 Key conventions confirmed from reading the codebase:
 
-- All child components wrapped in `React.memo`; all handlers in `App.tsx` wrapped in `useCallback`
-- Two distinct error states in `App.tsx`: `error` (initial fetch failure) and `mutationError` (create/update/delete failures)
-- Error propagation pattern: child catches, re-throws; parent sets `mutationError` via `catchMutationError`
-- All mutation handlers in `App.tsx` call `setMutationError(null)` on success
-- `arcsRef` pattern: a `useRef` mirroring `arcs` state, used inside async handlers to safely read latest arc list without stale closure issues
+- All child components wrapped in `React.memo`; every handler returned from a feature hook wrapped in `useCallback`
+- Two distinct error states: `error` (initial fetch failure, owned by `useArcs`) and `mutationError` (create/update/delete failures, from the single shared `useMutationError` in `App.tsx`)
+- Error propagation pattern: child catches, re-throws; `runMutation` sets `mutationError` and re-throws
+- `runMutation` clears `mutationError` on every successful mutation
 - State updates after mutations update both `arcs` (via `setArcs`) AND `selectedQuest` (via `setSelectedQuest`) where relevant
 - API layer: `request()` helper throws on non-ok responses; all functions return typed values; snake_case→camelCase mapping via `RawArc`/`RawQuest` types
-- `updateArc` returns `void` (no body); `updateQuest` should also return `void` (204 from backend)
+- `updateArc` and `updateQuest` both return `void` (the backend PUT/PATCH return 204 with no body)
 - In-flight guards (`commitInFlightRef`, `createQuestInFlightRef`) used in `ArcCard` to prevent double-submit; not yet established as a universal pattern but worth applying to new interactive components
-- Accessibility requirements: `<button>` not divs, `aria-label` on all interactive elements, focus rings via the `--qj-focus-ring` / `--qj-focus-ring-inverse` tokens in `index.css` (NOT the literal `2px solid #4f46e5` that CLAUDE.md still claims — that bullet is stale as of 2026-09-06), Enter key on inputs
+- Accessibility requirements: `<button>` not divs, `aria-label` on all interactive elements, focus rings via the `--qj-focus-ring` / `--qj-focus-ring-inverse` tokens in `index.css`, Enter key on inputs
 - Stub/placeholder code paths are tolerated when commented as deliberate scaffolding — do not report these as dead code more than once. (`getReminder()` in `QuestDetail` was the standing example; it and the reminder callout were deleted in the 2026-09 inline-edit change, along with the `--qj-done-bg`/`--qj-done-border`/`--qj-reminder-ink`/`--qj-card-hover` tokens.)
 - CLAUDE.md drifts behind the frontend section faster than anywhere else (it has repeatedly described removed things like `arcsRef`, `fetchArcs`, and "Mark as Complete placeholder"). Spot-check the CLAUDE.md frontend bullets against `api.ts` exports and `features/arcs/` on any review that touches them
 - `createQuest` in `api.ts` posts to `POST /arcs/{arcId}/quests` — re-confirmed 2026-08-09 (an earlier memory claiming `/quests` was wrong)
-- `updateQuest` in `api.ts` uses `PATCH /quests/{id}` — confirmed matches backend `@app.patch("/quests/{quest_id}")`
+- `updateQuest` in `api.ts` uses `PATCH /quests/{id}` — confirmed matches backend `@router.patch("/{quest_id}")` in `routers/quests.py`
 - `QuestDetail` uses `prevQuestIdRef` to gate `useEffect` reset so field values only reset on quest ID change, not on every re-render with same quest object
 - `commitInFlightRef` guard pattern is now established in both `ArcCard` and `QuestDetail`
 - State was refactored out of `App.tsx` into feature hooks under `frontend/src/features/arcs/`: `useArcs` (arcs/loading/error + mutations, exposes raw `setArcs`), `useQuests(setArcs)` (quest mutations via injected setter), `useSelectedQuest(arcs)` (selection + reconcile-during-render), `useMutationError` (runMutation wrapper). The old `arcsRef` is gone — mutation handlers now use functional `setArcs((prev) => ...)` updates instead, which is the preferred pattern.

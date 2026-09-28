@@ -7,10 +7,10 @@ type: project
 Key conventions confirmed from reading the codebase:
 
 - `DbSession = Annotated[Session, Depends(get_db)]` must be shared across repo factory functions in the same request; never duplicate the `Annotated` inline.
-- Repository `create` methods always call `db.refresh()` after `db.commit()`.
-- `ConstrainedStr` (max 100) for titles, `ConstrainedText` (max 1000) for descriptions; minimum length 1 on both.
+- Repositories only stage work on the session (`add`/attribute mutation/`delete`) and never commit or refresh; route handlers own `commit()`/`refresh()`.
+- `ConstrainedStr` (min 1, max 100) for titles; descriptions are a bare `Field(max_length=1000)` with no minimum, so an empty description is valid (there is no `ConstrainedText`).
 - Response schemas carry `model_config = ConfigDict(from_attributes=True)`.
-- Validation errors return 400, not 422 (custom `RequestValidationError` handler in main.py).
+- Validation errors return 400, not 422 (custom `RequestValidationError` handler in `exception_handlers.py`, registered in `main.py`).
 - `Quest.arc` relationship has `lazy="raise"` — never access it without explicit eager loading.
 - `ArcRepository.get_all()` uses `selectinload` for eager loading of quests.
 - HTTP status codes: 201 for create, 204 for update/delete, 200 for reads, 404 for missing resources. Exception (deliberate, 2026-08): `POST /quests/{id}/complete` and `/uncomplete` return **200 + full `schemas.Quest`**, not 204, so the client learns the server-resolved `completed_on` in one round trip. Both are idempotent no-ops when already in the target state.

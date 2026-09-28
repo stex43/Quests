@@ -1,16 +1,51 @@
 ROOT="$(git rev-parse --show-toplevel)"
 
-if git diff --cached --name-only | grep -q "^backend/"; then
+# Re-stage only the files that were staged before formatting (paths are repo-root relative).
+restage() {
+  printf '%s\n' "$1" | while IFS= read -r file; do
+    git -C "$ROOT" add -- "$file"
+  done
+}
+
+# Print the staged files ($1) that also have unstaged changes under $2. restage adds whole
+# files, so formatting one of these would sweep its unstaged hunks into the commit.
+partially_staged() {
+  unstaged="$(git -C "$ROOT" -c core.quotePath=false diff --name-only -- "$2")"
+  printf '%s\n' "$1" | while IFS= read -r file; do
+    if [ -n "$file" ] && printf '%s\n' "$unstaged" | grep -Fqx -- "$file"; then
+      printf '%s\n' "$file"
+    fi
+  done
+}
+
+BACKEND_STAGED="$(git -C "$ROOT" -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR -- backend/)"
+FRONTEND_STAGED="$(git -C "$ROOT" -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR -- frontend/)"
+
+# Checked for both sections up front so a refusal never leaves one section already formatted.
+PARTIAL="$(
+  partially_staged "$BACKEND_STAGED" backend/
+  partially_staged "$FRONTEND_STAGED" frontend/
+)"
+if [ -n "$PARTIAL" ]; then
+  {
+    echo "pre-commit: these files are only partially staged, and formatting would commit their unstaged changes:"
+    printf '%s\n' "$PARTIAL" | sed 's/^/  /'
+    echo "Stage them fully, or stash the rest, then commit again."
+  } >&2
+  exit 1
+fi
+
+if [ -n "$BACKEND_STAGED" ]; then
   cd "$ROOT/backend"
   .venv/Scripts/ruff check --fix src/
   .venv/Scripts/ruff format src/
-  git add -u
+  restage "$BACKEND_STAGED"
 fi
 
-if git diff --cached --name-only | grep -q "^frontend/"; then
+if [ -n "$FRONTEND_STAGED" ]; then
   cd "$ROOT/frontend"
   node_modules/.bin/prettier src/ --write --log-level warn
   node_modules/.bin/eslint src/ --ext .ts,.tsx --fix
-  git add -u
-  node_modules/.bin/tsc --noEmit
+  restage "$FRONTEND_STAGED"
+  node_modules/.bin/tsc -b
 fi

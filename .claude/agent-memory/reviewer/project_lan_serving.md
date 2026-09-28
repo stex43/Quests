@@ -9,7 +9,7 @@ The app is served from the user's laptop to other devices on the LAN, and the la
 **Why:** A backend URL baked in at build time broke whenever the Wi-Fi IP changed (change reviewed 2026-09-16). The guard was added to close simple-request CSRF and DNS rebinding raised in that review.
 
 **How to apply:**
-- Don't flag the CORS rule for accepting any LAN origin. That is the goal, and the API has no auth and listens on 0.0.0.0 anyway.
+- Settled decision: the app is served only on the home LAN from a laptop that stays at home; ports are published on all interfaces on purpose so phones can reach it. On 2026-09-28 the user accepted that anyone on the home Wi-Fi has full unauthenticated access, provided the router has no port forwarding. Don't flag the LAN-wide CORS rule or the missing auth on that basis; re-raise only if the deployment context changes (laptop taken to other networks, port forwarding, remote access).
 - The user decided NOT to add `.lan` / `.home.arpa` hosts. Don't re-raise that.
 - Watch that the guard's origin check stays in step with Starlette's `CORSMiddleware.is_allowed_origin`.
 - Settings in `backend/.env.docker` reach the app through compose `env_file` parsing, since the Dockerfile does not copy that file. Regex-valued vars must be single-quoted there.
