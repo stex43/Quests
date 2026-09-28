@@ -48,6 +48,15 @@ Key conventions confirmed from reading the codebase:
 
 **Accessible names should describe the action, not the blocked state:** flag `aria-label` values that swap the verb out for a validation message (e.g. "Save changes" → "Title required"); the name should stay stable and the reason should ride on `aria-describedby`.
 
+**RESPONSIVE/CSS CHECKS (added 2026-09-28, the `clamp()` responsive pass):** the shell now scales via a `/* Layout */` token group in `index.css` (`--qj-shell-pad-x/-y`, `--qj-shell-gap`, `--qj-arc-column`) plus inline `clamp()` curves in `App.css`, `QuestDetail.css`, `ArcList.css`. Recurring things to check on any width/height work:
+- **`vw` in `font-size` is a WCAG 1.4.4 trap.** Page zoom shrinks the CSS viewport, so a `vw` term makes text keep the same physical size while everything else grows; a `clamp(px, vw, px)` actively *shrinks* the CSS size at zoom. Compute apparent size at 200% zoom on a 1920 screen and compare to 100% — anything under 200% is a regression against the old fixed px value. Mitigation is a `rem` term in the middle (`clamp(Xrem, Yrem + Zvw, Wpx)`) and mins close to the max.
+- **A fixed `px` *min* in a grid track is a WCAG 1.4.10 trap.** `--qj-arc-column`'s 320px floor exceeds the content box below a ~360px viewport and forces document-level horizontal scroll at exactly the 320px reflow test width. Prefer `minmax(0, var(--qj-arc-column))` and/or a single-column stack media query.
+- **`.arc-list-panel` is `overflow: hidden`** (the detail panel is `overflow-y: auto`, which makes overflow-x compute to `auto`). So left-panel overflow is silently *clipped*, not scrollable — controls can become unclickable. `.quest-title` has no `overflow-wrap` while `.quest-detail-title-rest` does; the `.arc-header` inline-edit row (input intrinsic min + `white-space: nowrap` `.arc-title-error` + 2 icon buttons) is the widest thing in that panel.
+- **Prefer redefining the `--qj-*` layout tokens inside a media query** over overriding each property with literals — a literal copy of a clamp's min silently diverges when the clamp changes, and property-level overrides miss consumers (`.app-status-text` uses `--qj-shell-pad-y` too).
+- CLAUDE.md's frontend section hard-codes layout numbers ("left navigation panel (640px fixed)") — re-check it on any layout change.
+- `100vh` on `.app-shell` / `.app-status-text` is a mobile-viewport bug waiting to happen now that narrow widths are supported (`100dvh`).
+- Source-order cascade traps get an explanatory comment in this codebase (see the `:focus-visible:not(--error)` comments) — a media block that relies on being last, or on `padding-block` overriding only the block half of an earlier `padding` shorthand, should say so.
+
 **Why:** Conventions established across PRs #9 and #10 and visible in ArcCard.tsx, App.tsx, and api.ts.
 
 **How to apply:** Flag any deviation from these patterns as a consistency issue during reviews.

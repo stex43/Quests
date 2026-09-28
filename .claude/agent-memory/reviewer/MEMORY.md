@@ -4,7 +4,7 @@
 - [project_codebase_patterns.md](project_codebase_patterns.md) — Key backend patterns, known pre-existing gaps (async, UUID type mismatch, missing from_attributes, no arc_id FK validation), and dev-stage signals in the Quests codebase
 - [project_conventions.md](project_conventions.md) — Established backend conventions for the Quests FastAPI project (repository patterns, status codes, schema rules, lazy="raise" gotchas)
 - [project_exception_handling.md](project_exception_handling.md) — Domain-exception + centralized HTTP translation layer conventions (DomainError hierarchy, handler status map, ErrorResponse shape, no HTTPException in routers)
-- [project_frontend_patterns.md](project_frontend_patterns.md) — Established frontend conventions for the Quests React/TypeScript project (memo, useCallback, error states, arcsRef, API layer, accessibility)
+- [project_frontend_patterns.md](project_frontend_patterns.md) — Established frontend conventions for the Quests React/TypeScript project (memo, useCallback, error states, API layer, accessibility) + responsive/CSS review checks (vw-in-font-size vs 1.4.4, fixed grid-track mins vs 1.4.10, panel overflow behaviour, layout tokens)
 - [project_lan_serving.md](project_lan_serving.md) — App is served to LAN devices from a laptop whose IP changes; LAN-wide CORS is intended, LanRequestGuard covers CSRF/rebinding; settled decisions (no .lan), what the re-review resolved, and what stays open on purpose
 - [project_deploy_rig.md](project_deploy_rig.md) — Pull-based signed-tag deploy with the machinery outside the repo, the compose dev/prod split, and the script invariants that each fix a confirmed bug
 

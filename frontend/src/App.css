@@ -2,10 +2,10 @@
   height: 100vh;
   box-sizing: border-box;
   margin: 0;
-  padding: 36px 56px;
+  padding: var(--qj-shell-pad-y) var(--qj-shell-pad-x);
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: var(--qj-shell-gap);
   background: radial-gradient(
     ellipse at 50% -10%,
     var(--qj-backdrop-glow) 0%,
@@ -19,44 +19,55 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 8px 16px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 0 8px clamp(10px, 1.2vw, 16px);
   border-bottom: 2px solid var(--qj-panel-border);
 }
 
 .app-header-brand {
   display: flex;
   align-items: baseline;
-  gap: 14px;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: clamp(8px, 1vw, 14px);
 }
 
+/* rem + vw, not vw alone: page zoom narrows the CSS viewport by the same factor it
+   magnifies, so a pure vw term cancels itself out and the text never grows. The rem
+   half keeps zoom and the user's root font-size reaching it. Each max is the original
+   fixed size, so a wide screen is unchanged. */
 .app-header-title {
   font-family: var(--qj-font-display);
   font-weight: 900;
-  font-size: 34px;
+  font-size: clamp(1.5rem, 0.5625rem + 1.6667vw, 2.125rem);
   color: var(--qj-gilt);
-  letter-spacing: 2px;
+  letter-spacing: clamp(0.0625rem, 0.15vw, 0.125rem);
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 .app-header-subtitle {
   font-family: var(--qj-font-body);
   font-style: italic;
-  font-size: 16px;
+  font-size: clamp(0.8125rem, 0.53125rem + 0.5vw, 1rem);
   color: var(--qj-subtitle);
 }
 
 .app-header-nav {
   display: flex;
-  gap: 36px;
+  /* .app-header is space-between; once the nav wraps it is alone on its line and
+     would fall to the left edge without this. */
+  margin-left: auto;
+  gap: clamp(18px, 2vw, 36px);
 }
 
 .app-nav-tab {
   font-family: var(--qj-font-heading);
-  font-size: 15px;
+  font-size: clamp(0.8125rem, 0.625rem + 0.3333vw, 0.9375rem);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--qj-ink-muted);
-  padding-bottom: 10px;
+  padding-bottom: clamp(6px, 0.8vw, 10px);
   border-bottom: 2px solid transparent;
   user-select: none;
 }
@@ -69,13 +80,18 @@
 .app-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 640px 1fr;
+  /* minmax(0, 1fr), not 1fr: an fr track's implicit min-width: auto lets panel
+     content push the track past its share, which is what reintroduces overflow
+     at narrow widths. minmax(0, ...) on the first track too: --qj-arc-column's own
+     320px floor is a hard minimum, so without this the grid overflows the viewport
+     below ~360px and the document picks up a horizontal scrollbar. */
+  grid-template-columns: minmax(0, var(--qj-arc-column)) minmax(0, 1fr);
   gap: 0;
   min-height: 0;
 }
 
 .app-status-text {
-  padding: 40px 56px;
+  padding: calc(var(--qj-shell-pad-y) + 4px) var(--qj-shell-pad-x);
   font-family: var(--qj-font-body);
   font-size: 18px;
   color: var(--qj-gilt);
@@ -87,4 +103,30 @@
   min-height: 100vh;
   margin: 0;
   box-sizing: border-box;
+}
+
+/* A short screen is the other way to run out of room: the shell is 100vh, so every
+   pixel the header keeps is a pixel the panels lose. The width clamps above cannot
+   see this -- a wide 768px-tall laptop is roomy horizontally and tight vertically.
+   Redefining the tokens rather than overriding the properties keeps every consumer
+   in step (.app-status-text included, which has no rule of its own here). The two
+   remaining literals are deliberately each property's clamp minimum.
+   Note the cascade dependency: this :root ties with the base one in index.css on
+   specificity (0,1,0 both), so it wins only because App.css is emitted after
+   index.css -- main.tsx imports index.css first, and App.tsx imports App.css after
+   its component imports. Moving either import would silently revert the short-screen
+   sizes, with nothing in the build or the lint to catch it. */
+@media (max-height: 800px) {
+  :root {
+    --qj-shell-pad-y: 14px;
+    --qj-shell-gap: 14px;
+  }
+
+  .app-header {
+    padding-bottom: 10px;
+  }
+
+  .app-nav-tab {
+    padding-bottom: 6px;
+  }
 }
