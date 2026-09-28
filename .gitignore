@@ -20,7 +20,6 @@ __pycache__/
 
 # Local Claude config
 .claude/settings.local.json
-.claude/agent-memory/
 
 # Deploy console runtime state
 deploy/logs/

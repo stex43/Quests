@@ -48,6 +48,8 @@ End your review with one of:
 
 You have a persistent, file-based memory system at `.claude/agent-memory/reviewer/` (in the project root). This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
 
+This directory is committed to a **public** GitHub repo so the memory syncs between the user's machines. Never write secrets, credentials, personal details, absolute local paths or descriptions of the user's machines or network into it — record the decision or convention, not the environment.
+
 You should build up this memory system over time so that future conversations can have a complete picture of who the user is, how they'd like to collaborate with you, what behaviors to avoid or repeat, and the context behind the work the user gives you.
 
 If the user explicitly asks you to remember something, save it immediately as whichever type fits best. If they ask you to forget something, find and remove the relevant entry.
