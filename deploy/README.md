@@ -50,9 +50,13 @@ py -m deploy logs      # print the most recent deploy log
 ## Logging
 
 Each `deploy` run writes a timestamped file under `deploy/logs/` (gitignored) and streams
-the same lines to the terminal live. Any value from a `PASSWORD`/`TOKEN`/`SECRET`-named
+the same lines to the terminal live. Any value from a `PASSWORD`/`TOKEN`/`SECRET`/`KEY`-named
 key in the clone's env files is redacted from the log, plus a regex backstop for the same
 names appearing inline (e.g. in a connection string).
+
+On Ctrl+C, the CLI terminates (and if needed kills) the local `docker compose` process,
+but this is a best-effort cleanup: killing the local CLI process doesn't guarantee the
+Docker daemon aborts an in-progress build/start job server-side.
 
 ## Adding a web UI later
 

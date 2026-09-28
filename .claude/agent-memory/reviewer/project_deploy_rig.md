@@ -1,10 +1,20 @@
 ---
 name: project_deploy_rig
-description: How Quests reaches the laptop (pull-based, signed-tag-gated, machinery outside the repo) and the compose dev/prod split; the invariants a review must not break
+description: HISTORICAL — the retired signed-tag Task Scheduler pipeline (superseded 2026-09-28 by [[project_deploy_console]]); kept for the still-relevant self-hosted-runner warning and in case the mechanism is ever resurrected
 type: project
 ---
 
-Since 2026-09-20 Quests deploys pull-based. A Task Scheduler job runs `C:\deploy\deploy.ps1` every 5 minutes; it fetches, takes the newest `deploy-*` tag, runs `git verify-tag` against `C:\deploy\allowed_signers`, and only then checks out and runs `docker compose -p quests-prod -f docker-compose.yml up -d --build --wait`. Pushing to `main` deploys nothing. The machinery (`deploy.ps1`, `setup.md`, `allowed_signers`, the deploy clone) lives in `C:\deploy`, **outside the repo** — it is not visible in a normal diff.
+**Decommissioned 2026-09-28.** The "Quests deploy" Task Scheduler task was deleted and
+the `quests-prod-*` containers it last deployed were stopped and removed (their Postgres
+volume, `quests-prod_postgres-data`, was deliberately left on disk, unused, in case old
+data is ever wanted back). [[project_deploy_console]]'s `py -m deploy` is now the sole
+deploy mechanism — it does **not** carry forward the signed-tag gate described below;
+that tradeoff was made knowingly (see that memory's notes). The rest of this file
+describes the retired mechanism, kept for the accepted-risks history and because the
+self-hosted-runner warning immediately below remains true regardless of which pipeline
+exists.
+
+Since 2026-09-20 until 2026-09-28, Quests deployed pull-based via a Task Scheduler job running `C:\deploy\deploy.ps1` every 5 minutes; it fetched, took the newest `deploy-*` tag, ran `git verify-tag` against `C:\deploy\allowed_signers`, and only then checked out and ran `docker compose -p quests-prod -f docker-compose.yml up -d --build --wait`. Pushing to `main` deployed nothing. The machinery (`deploy.ps1`, `setup.md`, `allowed_signers`, the deploy clone) lived in `C:\deploy`, **outside the repo** — it was not visible in a normal diff, and by the time of decommissioning `C:\deploy` had already been removed from disk (the scheduled task was found disabled and pointing at a missing script).
 
 **Why:** `stex43/Quests` is public, and a self-hosted GitHub Actions runner on a public repo lets a fork PR set `runs-on: self-hosted` and execute code on the laptop. Inverting the direction removes GitHub's ability to run anything locally.
 

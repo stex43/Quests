@@ -9,8 +9,8 @@ from urllib.error import URLError
 
 from deploy import config
 
-_SECRET_NAME_RE = re.compile(r"password|token|secret", re.IGNORECASE)
-_SECRET_INLINE_RE = re.compile(r"(?i)\b(password|token|secret)(\s*[:=]\s*)\S+")
+_SECRET_NAME_RE = re.compile(r"password|token|secret|key", re.IGNORECASE)
+_SECRET_INLINE_RE = re.compile(r"(?i)\b(password|token|secret|key)(\s*[:=]\s*)\S+")
 
 
 class DeploymentFailed(Exception):
@@ -77,6 +77,11 @@ def _stream_process(cmd: list[str], cwd: Path) -> Iterator[str]:
     finally:
         if proc.poll() is None:
             proc.terminate()
+            try:
+                proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
 
     proc.wait()
     if proc.returncode != 0:
@@ -89,13 +94,29 @@ def _run(cmd: list[str], cwd: Path, secrets: set[str]) -> Iterator[str]:
 
 
 def _ensure_clone(clone_path: Path) -> Iterator[str]:
-    if (clone_path / ".git").exists():
+    if _is_valid_clone(clone_path):
         yield f"Using existing deploy clone at {clone_path}"
         return
+
+    if (clone_path / ".git").exists():
+        yield (
+            f"FAIL: {clone_path} has a .git directory but is not a valid clone "
+            "(likely an interrupted first clone). Delete it and rerun to re-clone."
+        )
+        raise DeploymentFailed("deploy clone is corrupt")
 
     clone_path.parent.mkdir(parents=True, exist_ok=True)
     yield f"Cloning {config.get_repo_url()} into {clone_path}"
     yield from _run(["git", "clone", config.get_repo_url(), str(clone_path)], clone_path.parent, set())
+
+
+def _is_valid_clone(clone_path: Path) -> bool:
+    if not (clone_path / ".git").exists():
+        return False
+    result = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"], cwd=clone_path, capture_output=True, text=True
+    )
+    return result.returncode == 0 and result.stdout.strip() == "true"
 
 
 def _head_info(clone_path: Path) -> tuple[str, str]:
@@ -115,7 +136,14 @@ def _parse_env_file(path: Path) -> dict[str, str]:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        values[key.strip()] = value.strip().strip("'\"")
+        value = value.strip()
+        if value and value[0] in "'\"":
+            quote = value[0]
+            end = value.find(quote, 1)
+            value = value[1:end] if end != -1 else value[1:]
+        else:
+            value = value.split(" #", 1)[0].rstrip()
+        values[key.strip()] = value
     return values
 
 
@@ -166,5 +194,9 @@ def get_status(clone_path: Path) -> list[str]:
 
     sha, message = _head_info(clone_path)
     result = subprocess.run(_compose_cmd("ps"), cwd=clone_path, capture_output=True, text=True)
-    ps_lines = result.stdout.rstrip().splitlines()
-    return [f"Deployed commit: {sha}  {message}", *ps_lines]
+    lines = [f"Deployed commit: {sha}  {message}"]
+    if result.returncode != 0:
+        lines.append(f"Could not query container status: {result.stderr.strip()}")
+    else:
+        lines.extend(result.stdout.rstrip().splitlines())
+    return lines

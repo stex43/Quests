@@ -11,7 +11,7 @@ LOCAL_CONFIG_PATH = DEPLOY_DIR / "config.local.json"
 
 COMPOSE_PROJECT_NAME = "quests-deploy"
 
-_SSH_URL_RE = re.compile(r"^git@github\.com:(?P<owner>[^/]+)/(?P<repo>.+?)(\.git)?$")
+_SSH_URL_RE = re.compile(r"^(?:ssh://)?git@github\.com[:/](?P<owner>[^/]+)/(?P<repo>.+?)(\.git)?/?$")
 
 
 def get_clone_path() -> Path:

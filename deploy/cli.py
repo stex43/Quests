@@ -20,7 +20,12 @@ def _latest_log_path() -> Path | None:
 
 
 def _cmd_deploy() -> int:
-    clone_path = config.get_clone_path()
+    try:
+        clone_path = config.get_clone_path()
+    except (OSError, ValueError) as e:
+        print(f"Could not resolve deploy clone path: {e}")
+        return 1
+
     log_path = _new_log_path()
     exit_code = 0
     with open(log_path, "w", encoding="utf-8") as log_file:
@@ -39,15 +44,22 @@ def _cmd_deploy() -> int:
         except (core.DeploymentFailed, subprocess.CalledProcessError) as e:
             emit(f"Deploy failed: {e}")
             exit_code = 1
+        except Exception as e:
+            emit(f"Deploy failed with an unexpected error: {e!r}")
+            exit_code = 1
 
     print(f"Log written to {log_path}")
     return exit_code
 
 
 def _cmd_status() -> int:
-    clone_path = config.get_clone_path()
-    for line in core.get_status(clone_path):
-        print(line)
+    try:
+        clone_path = config.get_clone_path()
+        for line in core.get_status(clone_path):
+            print(line)
+    except Exception as e:
+        print(f"Could not get deploy status: {e!r}")
+        return 1
     return 0
 
 
@@ -56,7 +68,11 @@ def _cmd_logs() -> int:
     if log_path is None:
         print("No deploy logs yet.")
         return 0
-    print(log_path.read_text(encoding="utf-8"), end="")
+    try:
+        print(log_path.read_text(encoding="utf-8"), end="")
+    except OSError as e:
+        print(f"Could not read log file {log_path}: {e}")
+        return 1
     return 0
 
 
@@ -68,16 +84,8 @@ def main(argv: list[str] | None = None) -> int:
     subparsers.add_parser("logs")
 
     args = parser.parse_args(argv)
-
-    if args.command == "deploy":
-        return _cmd_deploy()
-    if args.command == "status":
-        return _cmd_status()
-    if args.command == "logs":
-        return _cmd_logs()
-
-    parser.print_help()
-    return 1
+    commands = {"deploy": _cmd_deploy, "status": _cmd_status, "logs": _cmd_logs}
+    return commands[args.command]()
 
 
 if __name__ == "__main__":
