@@ -23,8 +23,23 @@ Backend uses synchronous SQLAlchemy (not async) throughout — `database.py` has
 - `QuestRow`'s completion checkbox is deliberately *not* disabled while a toggle is in flight (see the comment in `QuestRow.tsx`); the central `toggleInFlightRef` guard in `useQuests` drops the second click. Do not re-raise as a gap
 - `role="checkbox"` on a `<button>` in `QuestRow` — technically invalid per ARIA in HTML, but `aria-checked`/`aria-label` are correct and widely supported in practice
 
+## List ordering (added 2026-09-28)
+- `Arc` and `Quest` have a server-set `created_at` (`DateTime(timezone=True)`, `server_default=func.now()`), not exposed in the API
+- Arcs: `created_at DESC, id DESC` in `ArcRepository.get_all`; quests: `created_at ASC, id ASC` via `Arc.quests` `relationship(order_by=...)` and `QuestRepository.get_by_arc`
+- The directions mirror the frontend (`useArcs.create` prepends, `useQuests.create` appends) — if either insertion side changes, the other must follow or a reload reorders the list
+- Rows that existed before migration `d2ccfda40961` share one timestamp, so their order is by UUID — arbitrary but stable; the user was told
+
 ## Remaining known gaps
 - Three learning-note `# todo` comments in `database.py` (`wtf is engine`, `autocommit`, `yield`) — should not be in production source. Low priority.
 - No pagination on `GET /arcs` (`# todo: paging` in `routers/arcs.py`).
 - IDs are generated in Python (`uuid.uuid4()`) rather than at the DB level.
 - `GET /` root endpoint returns `{"Hello": "World"}` — dead scaffolding code.
+
+## Open findings from the 2026-09-28 full review (reported, not yet fixed or decided)
+Reference these as known rather than re-reporting them as new; flag if one gets worse.
+- `dependencies.py` comment (and CLAUDE.md) claim that inlining `Depends(get_db)` twice would create two sessions — wrong, FastAPI caches a dependency per request. The alias is fine; the warning is inaccurate.
+- 500s from the `Exception` handler carry no CORS headers (Starlette routes it to `ServerErrorMiddleware`, outside `CORSMiddleware`), so the browser sees "Failed to fetch".
+- `ArcCard` `cancelledRef` is not reset in `startEdit` (unconfirmed across browsers): a stale `true` could swallow the next edit's first blur-commit.
+- Dead `try/except IntegrityError` in `routers/arcs.py` `update_arc` (no constraint on an arc title can fire); unused `GET /quests/{id}`, `GET /arcs/{id}/quests`.
+- `TODO.md`'s "[Critical] IntegrityError handler" item is stale — routers already catch it.
+- Simplification ideas offered, user has not decided: `key={selectedQuest?.id}` on `QuestDetail` to drop most of its mid-save focus machinery; `useSelectedQuest` storing only the id; one handler for all `DomainError` subclasses; shrinking CLAUDE.md. Don't push these again unless asked.

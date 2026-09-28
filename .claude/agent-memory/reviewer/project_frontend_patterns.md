@@ -56,6 +56,8 @@ Key conventions confirmed from reading the codebase:
 - `100vh` on `.app-shell` / `.app-status-text` is a mobile-viewport bug waiting to happen now that narrow widths are supported (`100dvh`).
 - Source-order cascade traps get an explanatory comment in this codebase (see the `:focus-visible:not(--error)` comments) — a media block that relies on being last, or on `padding-block` overriding only the block half of an earlier `padding` shorthand, should say so.
 
+**Arc delete confirmation (added 2026-09-28):** the trash button sets `isConfirmingDelete` in `ArcCard`, replacing the pencil/trash buttons with a `role="group"` labelled by the "Delete arc?" / "Delete arc and its N quest(s)?" prompt, plus Delete (`--qj-crimson`) and Cancel buttons whose aria-labels start with their visible text. Focus goes to Cancel on open; Cancel/Escape (ignored while `isDeleting`) close it and return focus to the trash button through `restoreDeleteFocusRef` + an effect (the trash button is unmounted while confirming); a failed delete does the same. On success, `ArcList.handleDeleteArc` records the neighbouring arc ids from the `data-arc-id` cards before awaiting, then a `deleteFocusRequest` counter effect focuses the next (else previous) arc's expand button, else the new-arc input — only if focus fell to `<body>`. Quest delete has no confirmation (not requested). Recurring check: any new destructive or disabling control needs the same "where does focus go afterwards" answer.
+
 **Why:** Conventions established across PRs #9 and #10 and visible in ArcCard.tsx, App.tsx, and api.ts.
 
 **How to apply:** Flag any deviation from these patterns as a consistency issue during reviews.
