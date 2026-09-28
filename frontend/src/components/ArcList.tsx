@@ -1,7 +1,12 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { Arc, Quest } from "../types";
 import { ArcCard } from "./ArcCard";
 import "./ArcList.css";
+
+// The rendered arc cards, in display order (ArcCard tags its root with data-arc-id).
+function arcCardElements(panel: HTMLElement | null): HTMLElement[] {
+  return panel ? Array.from(panel.querySelectorAll<HTMLElement>("[data-arc-id]")) : [];
+}
 
 interface Props {
   arcs: Arc[];
@@ -37,6 +42,33 @@ export const ArcList = memo(function ArcList({
   const [newArcTitle, setNewArcTitle] = useState("");
   const [isCreatingArc, setIsCreatingArc] = useState(false);
   const createArcInFlightRef = useRef(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const newArcInputRef = useRef<HTMLInputElement>(null);
+  // Arc ids to try (next, then previous) once a deleted card has unmounted; the
+  // counter re-runs the focus effect after the render that removed the card.
+  const deleteFocusCandidatesRef = useRef<string[] | null>(null);
+  const [deleteFocusRequest, setDeleteFocusRequest] = useState(0);
+
+  useEffect(() => {
+    const candidates = deleteFocusCandidatesRef.current;
+    if (candidates === null) return;
+    deleteFocusCandidatesRef.current = null;
+    // Only recover focus that the deleted card dropped; don't steal it if the
+    // user moved on while the request was in flight.
+    const active = document.activeElement;
+    if (active !== null && active !== document.body) return;
+    const cards = arcCardElements(panelRef.current);
+    for (const id of candidates) {
+      const button = cards
+        .find((card) => card.dataset.arcId === id)
+        ?.querySelector<HTMLButtonElement>(".arc-expand-area");
+      if (button && !button.disabled) {
+        button.focus();
+        return;
+      }
+    }
+    newArcInputRef.current?.focus();
+  }, [deleteFocusRequest]);
 
   const toggleExpand = useCallback((arcId: string) => {
     setCollapsedArcIds((prev) => {
@@ -49,12 +81,22 @@ export const ArcList = memo(function ArcList({
 
   const handleDeleteArc = useCallback(
     async (arcId: string) => {
+      // Neighbours are read from the rendered cards before the await, while this
+      // card is still in the DOM to anchor the lookup.
+      const ids = arcCardElements(panelRef.current).map((card) => card.dataset.arcId);
+      const index = ids.indexOf(arcId);
+      const neighbours =
+        index === -1
+          ? []
+          : [ids[index + 1], ids[index - 1]].filter((id): id is string => id !== undefined);
       await onDeleteArc(arcId);
       setCollapsedArcIds((prev) => {
         const next = new Set(prev);
         next.delete(arcId);
         return next;
       });
+      deleteFocusCandidatesRef.current = neighbours;
+      setDeleteFocusRequest((n) => n + 1);
     },
     [onDeleteArc],
   );
@@ -84,7 +126,7 @@ export const ArcList = memo(function ArcList({
     : arcs.filter((arc) => arc.quests.length === 0 || arc.quests.some((quest) => !quest.completed));
 
   return (
-    <div className="arc-list-panel">
+    <div className="arc-list-panel" ref={panelRef}>
       <div className="arc-list-header">
         <span className="arc-list-title">ONGOING DEEDS</span>
         <label className="show-completed-toggle">
@@ -116,6 +158,7 @@ export const ArcList = memo(function ArcList({
 
         <div className="new-arc-row">
           <input
+            ref={newArcInputRef}
             className="arc-list-input"
             placeholder="New arc name..."
             value={newArcTitle}

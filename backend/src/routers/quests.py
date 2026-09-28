@@ -10,14 +10,6 @@ from src.exceptions import ConflictError, DomainValidationError, NotFoundError
 router = APIRouter(prefix="/quests", tags=["quests"])
 
 
-@router.get("/{quest_id}", status_code=status.HTTP_200_OK, response_model=schemas.Quest)
-def get_quest(quest_id: uuid.UUID, repo: QuestRepo):
-    db_quest = repo.get(quest_id)
-    if not db_quest:
-        raise NotFoundError("Quest", quest_id)
-    return db_quest
-
-
 @router.patch("/{quest_id}", status_code=status.HTTP_204_NO_CONTENT)
 def update_quest(
     quest_id: uuid.UUID,

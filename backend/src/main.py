@@ -4,13 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src import exception_handlers
 from src.exceptions import ConflictError, DomainError, DomainValidationError, NotFoundError
-from src.middleware import LanRequestGuard
+from src.middleware import LanRequestGuard, UnhandledErrorMiddleware
 from src.routers import arcs, quests
 from src.settings import settings
 
 app = FastAPI()
 
-# Added before CORS so CORS wraps it: preflights are answered and error responses get CORS headers.
+# The last added is outermost, giving CORS > LanRequestGuard > UnhandledErrorMiddleware > app: CORS
+# answers preflights and adds its headers to the guard's rejections and to 500s alike.
+app.add_middleware(UnhandledErrorMiddleware)
 app.add_middleware(
     LanRequestGuard,
     allowed_host_regex=settings.allowed_host_regex,
@@ -30,12 +32,6 @@ app.add_exception_handler(NotFoundError, exception_handlers.not_found_handler)
 app.add_exception_handler(ConflictError, exception_handlers.conflict_handler)
 app.add_exception_handler(DomainValidationError, exception_handlers.validation_error_handler)
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_handler)
-app.add_exception_handler(Exception, exception_handlers.unhandled_exception_handler)
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
 
 
 @app.get("/health")

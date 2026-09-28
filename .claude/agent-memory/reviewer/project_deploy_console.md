@@ -4,11 +4,11 @@ description: The manual `py -m deploy` CLI (deploy/ package, added PR #23) — i
 type: project
 ---
 
-Since PR #23 (2026-09-28) this is the **sole** deploy mechanism — it replaced
-[[project_deploy_rig]] outright (that Task Scheduler job was deleted and its
-`quests-prod-*` containers torn down the same day, once this package's round-1 review
-gaps below were fixed). Do not describe these as "two independent pipelines" in future
-reviews; that framing is now historical.
+Since PR #23 (2026-09-28) this is the **sole** deploy mechanism — it replaced the
+earlier scheduled pipeline outright (retired and torn down the same day).
+Do not describe these as "two independent pipelines" in future reviews.
+
+Never propose a self-hosted GitHub Actions runner while the repo is public.
 
 - `deploy/` is a small stdlib-only Python package (`py -m deploy deploy|status|logs`),
   manually invoked by a human on the machine. No scheduler, no webhook, no ref/branch
@@ -16,19 +16,12 @@ reviews; that framing is now historical.
   separate clone (default `~/quests-deploy`, override via `QUESTS_DEPLOY_HOME` env var or
   `deploy/config.local.json`).
 - Fixed compose project name `quests-deploy` (always passed via `-p`), independently
-  configurable `BACKEND_PORT`/`FRONTEND_PORT` in the clone's own root `.env`. Originally
-  meant to coexist with `project_deploy_rig`'s `quests-prod` stack without port
-  collisions; since the 2026-09-28 replacement it's configured to use the standard
-  8000/5173 ports directly (there's no other stack to avoid anymore), but the mechanism
-  (per-clone `.env`, not hardcoded) is kept in case a second environment (e.g. staging)
-  is ever wanted.
-- The user explicitly chose, after being told the tradeoff, to run with **no signature
-  verification** — deploying is human-triggered, so the operator running the command is
-  the trust boundary, but unlike `project_deploy_rig` there is no `git verify-tag` gate
-  against a compromised push to `main`. This was a knowing, informed decision on
-  2026-09-28 (not an oversight) — do not silently re-propose porting the signed-tag gate
-  back in without flagging that it was deliberately declined once already; if raised
-  again, treat it as "worth revisiting," not as a bug fix.
+  configurable `BACKEND_PORT`/`FRONTEND_PORT` in the clone's own root `.env`. It uses
+  the standard 8000/5173 ports, but the mechanism (per-clone `.env`, not hardcoded) is
+  kept in case a second environment (e.g. staging) is ever wanted.
+- The deploy's trust model is a settled user decision (2026-09-28). Don't propose
+  changes to it in routine reviews; if a change touches it, mention it as "worth
+  revisiting", not as a bug.
 - `deploy/core.py`'s `run_deploy()` is a generator; `finally: yield <summary line>` while
   an exception is in flight is a deliberate, correct pattern (the yield delays the
   exception by one `next()` call so the CLI gets the summary line before the exception
@@ -61,12 +54,18 @@ reviews; that framing is now historical.
 8. `get_status()` silently swallowed a failed `docker compose ps` — fixed: reports
    `stderr` on non-zero exit instead of returning a misleadingly-empty status.
 
+**Fixed 2026-09-28 (round 2):** `_stream_process` used to `terminate()` in a `finally`
+that also ran on normal completion, before `proc.wait()`, so a successful step could
+surface as `CalledProcessError` (-15). It now runs inside `with Popen(...)`, waits inside
+the `try`, and only terminates → waits 10s → kills under `except BaseException`.
+Still open, pre-existing and minor: `run_deploy`'s `finally: yield` raises "generator
+ignored GeneratorExit" when Ctrl+C lands inside the CLI's `emit()`; the child is still
+terminated.
+
 A future review of `deploy/` should confirm these stayed fixed rather than re-deriving
 them; if any regress, that's worth flagging as a regression, not a fresh finding.
 
-**How to apply:** Treat `project_deploy_rig` as historical background only — don't
-review this package against it, and don't flag the missing signature gate as a defect
-(see above). Do periodically check whether a "key"-adjacent credential name slips past
-the current regex coverage as the project's env files grow.
-
-Related: [[project_deploy_rig]].
+**How to apply:** Don't review this package against the retired pipeline, and leave the
+trust model alone (see above). Do periodically check whether
+a "key"-adjacent credential name slips past the current regex coverage as the project's
+env files grow.

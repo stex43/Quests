@@ -1,6 +1,6 @@
 # Quests Backend
 
-A minimal FastAPI project skeleton that exposes a friendly greeting.
+The FastAPI backend for Quests.
 
 ## Requirements
 
@@ -31,7 +31,7 @@ Use `uvicorn` to run the API locally:
 uvicorn src.main:app --reload
 ```
 
-Visit <http://localhost:8000/> to see the "Hello world" response.
+Visit <http://localhost:8000/health> for a liveness check.
 
 Interactive API documentation is available at <http://localhost:8000/docs>.
 
@@ -43,7 +43,7 @@ Build and start the backend service using Docker Compose:
 docker compose up --build
 ```
 
-The API will be available at <http://localhost:8000/>.
+Once it is up, the interactive API documentation is at <http://localhost:8000/docs>, and <http://localhost:8000/health> serves as a liveness check.
 
 > **Note:** Compose mounts `backend/src` into the container (`./backend/src:/app/src`), but `uvicorn` runs without `--reload`, so edits are **not** picked up automatically. After changing anything under `backend/src`, restart the service; no rebuild is needed:
 >

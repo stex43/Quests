@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import { PencilIcon, TrashIcon } from "./icons";
 import type { Arc, Quest } from "../types";
 import { QuestRow } from "./QuestRow";
@@ -36,16 +36,30 @@ export const ArcCard = memo(function ArcCard({
   const [editError, setEditError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isCreatingQuest, setIsCreatingQuest] = useState(false);
   const [newQuestTitle, setNewQuestTitle] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
   const commitInFlightRef = useRef(false);
   const createQuestInFlightRef = useRef(false);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const restoreDeleteFocusRef = useRef(false);
+  const deletePromptId = useId();
 
   useEffect(() => {
     if (isEditing) editInputRef.current?.focus();
   }, [isEditing]);
+
+  useEffect(() => {
+    if (isConfirmingDelete) {
+      cancelDeleteRef.current?.focus();
+    } else if (restoreDeleteFocusRef.current) {
+      restoreDeleteFocusRef.current = false;
+      deleteButtonRef.current?.focus();
+    }
+  }, [isConfirmingDelete]);
 
   function startEdit() {
     setEditTitle(arc.title);
@@ -78,12 +92,19 @@ export const ArcCard = memo(function ArcCard({
     }
   }
 
+  function cancelDelete() {
+    restoreDeleteFocusRef.current = true;
+    setIsConfirmingDelete(false);
+  }
+
   async function handleDelete() {
     setIsDeleting(true);
     try {
       await onDelete(arc.id);
     } catch {
-      // error displayed by parent via mutationError
+      // error displayed by parent via mutationError; the disabled buttons dropped focus,
+      // so hand it back to the trash button
+      cancelDelete();
     } finally {
       setIsDeleting(false);
     }
@@ -106,8 +127,10 @@ export const ArcCard = memo(function ArcCard({
     }
   }
 
+  const questCount = arc.quests.length;
+
   return (
-    <div className="arc-card">
+    <div className="arc-card" data-arc-id={arc.id}>
       <div className="arc-header">
         <button
           type="button"
@@ -158,26 +181,67 @@ export const ArcCard = memo(function ArcCard({
           </>
         )}
 
-        <button
-          type="button"
-          className="icon-button"
-          onClick={startEdit}
-          disabled={isEditing || isDeleting}
-          aria-label="Edit arc"
-          title="Edit arc"
-        >
-          <PencilIcon />
-        </button>
-        <button
-          type="button"
-          className="icon-button"
-          onClick={() => void handleDelete()}
-          disabled={isEditing || isSaving || isDeleting}
-          aria-label="Delete arc"
-          title="Delete arc"
-        >
-          <TrashIcon />
-        </button>
+        {isConfirmingDelete ? (
+          <div
+            className="arc-delete-confirm"
+            role="group"
+            aria-labelledby={deletePromptId}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && !isDeleting) cancelDelete();
+            }}
+          >
+            <span id={deletePromptId} className="arc-delete-confirm-text">
+              {questCount === 0
+                ? "Delete arc?"
+                : `Delete arc and its ${questCount.toString()} ${questCount === 1 ? "quest" : "quests"}?`}
+            </span>
+            <button
+              type="button"
+              className="arc-delete-confirm-button arc-delete-confirm-button--danger"
+              onClick={() => void handleDelete()}
+              disabled={isDeleting}
+              aria-label="Delete arc"
+            >
+              Delete
+            </button>
+            <button
+              ref={cancelDeleteRef}
+              type="button"
+              className="arc-delete-confirm-button"
+              onClick={cancelDelete}
+              disabled={isDeleting}
+              aria-label="Cancel deleting arc"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={startEdit}
+              disabled={isEditing || isDeleting}
+              aria-label="Edit arc"
+              title="Edit arc"
+            >
+              <PencilIcon />
+            </button>
+            <button
+              ref={deleteButtonRef}
+              type="button"
+              className="icon-button"
+              onClick={() => {
+                setIsConfirmingDelete(true);
+              }}
+              disabled={isEditing || isSaving || isDeleting}
+              aria-label="Delete arc"
+              title="Delete arc"
+            >
+              <TrashIcon />
+            </button>
+          </>
+        )}
       </div>
 
       {isExpanded && (

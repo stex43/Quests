@@ -6,10 +6,7 @@ from sqlalchemy.orm import Session
 from src.database import get_db
 from src.repositories import ArcRepository, QuestRepository
 
-# DbSession is a shared Annotated alias. Both get_arc_repo and get_quest_repo use it,
-# so FastAPI resolves get_db once per request and both repos share the same session.
-# Do NOT inline Annotated[Session, Depends(get_db)] separately in each factory —
-# that would create two independent sessions within the same request.
+# Shared alias for brevity; FastAPI resolves get_db once per request, so handlers and both repos share one session.
 DbSession = Annotated[Session, Depends(get_db)]
 
 

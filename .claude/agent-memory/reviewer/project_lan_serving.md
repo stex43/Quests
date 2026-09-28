@@ -1,21 +1,21 @@
 ---
 name: project_lan_serving
-description: Quests is served from a laptop to LAN devices whose IP changes; CORS is intentionally LAN-wide, a LanRequestGuard middleware covers CSRF/rebinding; settled decisions not to re-raise
+description: Quests is served to devices on the local network from a host whose IP can change; CORS is intentionally LAN-wide, a LanRequestGuard middleware covers CSRF/rebinding; settled decisions not to re-raise
 type: project
 ---
 
-The app is served from the user's laptop to other devices on the LAN, and the laptop's IP changes. The frontend therefore takes the API host from `window.location` at runtime, and the backend CORS default is a LAN-only `allow_origin_regex` (loopback, RFC 1918, *.local). A pure-ASGI `LanRequestGuard` (`backend/src/middleware.py`) checks Host (400 `invalid_host`) and the Origin of unsafe methods (403 `forbidden_origin`), reusing the CORS settings. Shipped in PR #20 (branch `lan-runtime-backend-url`), verified from a phone on 2026-09-20.
+The app is served to other devices on the local network, and the serving host's IP can change. The frontend therefore takes the API host from `window.location` at runtime, and the backend CORS default is a LAN-only `allow_origin_regex` (loopback, RFC 1918, *.local). A pure-ASGI `LanRequestGuard` (`backend/src/middleware.py`) checks Host (400 `invalid_host`) and the Origin of unsafe methods (403 `forbidden_origin`), reusing the CORS settings. Shipped in PR #20 (branch `lan-runtime-backend-url`).
 
-**Why:** A backend URL baked in at build time broke whenever the Wi-Fi IP changed (change reviewed 2026-09-16). The guard was added to close simple-request CSRF and DNS rebinding raised in that review.
+**Why:** A backend URL baked in at build time broke whenever the host's IP changed (change reviewed 2026-09-16). The guard was added to close simple-request CSRF and DNS rebinding raised in that review.
 
 **How to apply:**
-- Don't flag the CORS rule for accepting any LAN origin. That is the goal, and the API has no auth and listens on 0.0.0.0 anyway.
+- The deployment and exposure model is a settled user decision (discussed 2026-09-28). Don't raise it in routine reviews; do raise it when a change alters it (new published ports or services, remote-access code, anything meant to be reached from outside the local network).
 - The user decided NOT to add `.lan` / `.home.arpa` hosts. Don't re-raise that.
 - Watch that the guard's origin check stays in step with Starlette's `CORSMiddleware.is_allowed_origin`.
 - Settings in `backend/.env.docker` reach the app through compose `env_file` parsing, since the Dockerfile does not copy that file. Regex-valued vars must be single-quoted there.
 
 **Resolved — do not re-raise:**
-- Postgres published LAN-wide (`5432:5432`, `quests/quests`): fixed 2026-09-20. `docker-compose.yml` is now the production base and publishes no db port at all; `docker-compose.override.yml` (dev, auto-loaded) binds `127.0.0.1:5432`. `backend/.env.docker` is untracked and the password was rotated for the deploy clone.
+- Postgres port publishing: fixed 2026-09-20. `docker-compose.yml` is the production base and publishes no db port; `docker-compose.override.yml` (dev, auto-loaded) binds `127.0.0.1:5432`. `backend/.env.docker` is untracked. Flag any change that publishes the db port beyond loopback.
 - Same-origin writes (e.g. /docs "Try it out") when `CORS_ORIGIN_REGEX` is empty: `_is_same_origin` now accepts an Origin whose scheme and host[:port] equal the request's already-validated Host.
 - TestClient's default Host `testserver` getting 400: `CLAUDE.md` records the convention — tests construct `TestClient(app, base_url="http://localhost")`, or set `ALLOWED_HOST_REGEX=` before importing `src.main` (the regex is captured at import time).
 

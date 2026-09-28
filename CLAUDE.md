@@ -88,22 +88,23 @@ The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, 
 
 ### Backend (`backend/src/`)
 
-- `main.py` — FastAPI app setup: middleware, exception handler registration, and router registration
-- `middleware.py` — `LanRequestGuard`, a pure ASGI middleware: a `Host` not matching `allowed_host_regex` gets 400 (DNS-rebinding defence), and an unsafe-method request whose `Origin` is neither a CORS-allowed origin nor same-origin with the (already validated) `Host` gets 403 (no `Origin` passes, `null` does not; same-origin is what keeps Swagger's "Try it out" working when `CORS_ORIGIN_REGEX` is empty); it builds its own `ErrorResponse` bodies and is registered before `CORSMiddleware` so CORS wraps it and still answers preflights
+- `main.py` — FastAPI app setup: middleware, exception handler registration, the `/health` route, and router registration; middleware order, outermost first, is `CORSMiddleware` > `LanRequestGuard` > `UnhandledErrorMiddleware` > app
+- `middleware.py` — `LanRequestGuard`, a pure ASGI middleware: a `Host` not matching `allowed_host_regex` gets 400 (DNS-rebinding defence), and an unsafe-method request whose `Origin` is neither a CORS-allowed origin nor same-origin with the (already validated) `Host` gets 403 (no `Origin` passes, `null` does not; same-origin is what keeps Swagger's "Try it out" working when `CORS_ORIGIN_REGEX` is empty); it builds its own `ErrorResponse` bodies and is registered before `CORSMiddleware` so CORS wraps it and still answers preflights. Also `UnhandledErrorMiddleware`, also pure ASGI and inside the guard: it turns any unhandled exception into a 500 `internal_error` `ErrorResponse` and logs it once via the `uvicorn.error` logger (so it gets uvicorn's formatted handler) (re-raising instead if the response already started). It replaces an `Exception` handler, which Starlette would run in `ServerErrorMiddleware` outside CORS, so the browser saw a CORS failure instead of the body
 - There are no backend tests yet. When they are added, they must construct `TestClient(app, base_url="http://localhost")` (or set `ALLOWED_HOST_REGEX=` before importing `src.main`), because the guard rejects the default `testserver` host with 400 and `main.py` reads the regex at import time
 - `routers/` — `arcs.py` and `quests.py` `APIRouter`s holding the route handlers
-- `dependencies.py` — `DbSession = Annotated[Session, Depends(get_db)]` alias plus the `ArcRepo`/`QuestRepo` dependency aliases; the shared `DbSession` is what keeps both repos on one session per request
+- `dependencies.py` — `DbSession = Annotated[Session, Depends(get_db)]` alias plus the `ArcRepo`/`QuestRepo` dependency aliases; FastAPI caches `get_db` per request, so the handler and both repos share one session
 - `schemas.py` — Pydantic request/response schemas; titles use `ConstrainedStr` (min 1, max 100), description fields use a bare `Field(max_length=1000)` with no minimum, so an empty description is valid; response schemas have `model_config = ConfigDict(from_attributes=True)`
 - `repositories.py` — `ArcRepository` and `QuestRepository`; each takes `Session` in `__init__`; they only stage work on the session (`add`/attribute mutation/`delete`) and never commit or refresh — the route handlers own `commit()`/`refresh()`; `get_all` uses `selectinload` for eager loading
 - `models.py` — SQLAlchemy ORM models (`Arc`, `Quest`); `Quest.arc` has `lazy="raise"`
 - `database.py` — engine (`echo` gated on `settings.debug`), `SessionLocal`, and `get_db` with explicit rollback on exception
 - `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars; `debug: bool = False`; `cors_origin_regex` and `allowed_host_regex` default to `LAN_CORS_ORIGIN_REGEX` / `LAN_HOST_REGEX` (built from one shared host pattern) and are validated at startup (empty means off)
-- `exceptions.py` / `exception_handlers.py` — domain exceptions and the handlers registered in `main.py` that map them to `ErrorResponse` bodies; routers raise domain exceptions and never `HTTPException`, and the validation handler is what turns 422 into 400
+- `exceptions.py` / `exception_handlers.py` — domain exceptions and the handlers registered in `main.py` that map them to `ErrorResponse` bodies; routers raise domain exceptions and never `HTTPException`, and the validation handler is what turns 422 into 400. There is deliberately no `Exception` handler; `UnhandledErrorMiddleware` covers 500s
 
 ### Data Model
 
 - **Arc**: a story arc with a title; has many Quests (cascade delete)
 - **Quest**: belongs to an Arc via `arc_id` FK; has title, description, a `completed` flag, and a nullable `completed_on` date — the completer's local calendar day, resolved server-side from a client-supplied UTC offset (the time of day is deliberately not stored)
+- Both have a server-set `created_at` (not exposed in the API) that fixes list order: arcs newest first, quests oldest first, `id` as tiebreaker — matching the frontend prepending new arcs and appending new quests
 
 ### Migrations
 

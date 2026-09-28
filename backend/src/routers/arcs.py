@@ -30,12 +30,7 @@ def update_arc(arc_id: uuid.UUID, arc_update: schemas.ArcUpdate, db: DbSession, 
     if not db_arc:
         raise NotFoundError("Arc", arc_id)
     repo.update(db_arc, title=arc_update.title)
-    try:
-        db.commit()
-    except IntegrityError:
-        # Roll back the failed transaction before raising; get_db's own rollback on exception is then a no-op.
-        db.rollback()
-        raise ConflictError("Update failed due to a conflict.")
+    db.commit()
 
 
 @router.post("/{arc_id}/quests", status_code=status.HTTP_201_CREATED, response_model=schemas.Quest)
@@ -57,17 +52,6 @@ def create_quest(
         raise ConflictError("Target arc no longer exists.")
     db.refresh(db_quest)
     return db_quest
-
-
-@router.get("/{arc_id}/quests", status_code=status.HTTP_200_OK, response_model=list[schemas.Quest])
-def get_quests_by_arc(
-    arc_id: uuid.UUID,
-    arc_repo: ArcRepo,
-    quest_repo: QuestRepo,
-):
-    if not arc_repo.get(arc_id):
-        raise NotFoundError("Arc", arc_id)
-    return quest_repo.get_by_arc(arc_id)
 
 
 @router.delete("/{arc_id}", status_code=status.HTTP_204_NO_CONTENT)

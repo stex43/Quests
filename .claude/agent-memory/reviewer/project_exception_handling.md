@@ -7,9 +7,9 @@ type: project
 Backend uses a domain-exception layer with centralized HTTP translation (introduced ~2026-07):
 
 - `src/exceptions.py`: `DomainError(Exception)` base carries `message` + optional `details` dict. Subclasses: `NotFoundError(entity, entity_id)` (auto-builds message + details `{"entity", "id"}` with id stringified), `ConflictError(message)`, `DomainValidationError(message)` (renamed from `ValidationError` ~2026-07 to avoid confusion with FastAPI/pydantic `ValidationError`).
-- `src/exception_handlers.py`: async handlers return `JSONResponse(status_code=..., content=ErrorResponse(...).model_dump())`. Status map: DomainError base fallback=400/"domain_error", NotFound=404/"not_found", Conflict=409/"conflict", DomainValidationError=400/"validation_error", RequestValidationError=400/"validation_error", base Exception=500/"internal_error". Starlette dispatches by exact-then-MRO lookup, so subclass handlers take precedence over the base DomainError fallback regardless of registration order.
+- `src/exception_handlers.py`: async handlers return `JSONResponse(status_code=..., content=ErrorResponse(...).model_dump())`. Status map: DomainError base fallback=400/"domain_error", NotFound=404/"not_found", Conflict=409/"conflict", DomainValidationError=400/"validation_error", RequestValidationError=400/"validation_error". Starlette dispatches by exact-then-MRO lookup, so subclass handlers take precedence over the base DomainError fallback regardless of registration order.
 - `ErrorResponse` schema (schemas.py): `error: str`, `message: str`, `details: dict | None = None`.
-- Handlers registered in main.py via `app.add_exception_handler(...)`, including `add_exception_handler(Exception, ...)`.
+- Handlers registered in main.py via `app.add_exception_handler(...)` for the domain exceptions and `RequestValidationError`. Unhandled exceptions are NOT a handler: `UnhandledErrorMiddleware` (`middleware.py`, innermost, inside CORS) turns them into 500 `internal_error` so the response keeps CORS headers and is logged once via `uvicorn.error` (since 2026-09-28).
 - Routers raise domain exceptions, NEVER `HTTPException`. No HTTP knowledge in repositories.
 - Conflict flow: `db.rollback()` then `raise ConflictError(...)` inside `except IntegrityError`.
 
