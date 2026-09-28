@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 26px 14px;
+  padding: clamp(14px, 1.6vw, 20px) clamp(14px, 2vw, 26px) 14px;
   border-bottom: 2px solid var(--qj-hairline);
 }
 

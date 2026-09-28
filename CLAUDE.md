@@ -111,7 +111,7 @@ Alembic is configured in `backend/alembic/`. The `env.py` imports `models.Base.m
 
 ### Frontend (`frontend/src/`)
 
-Split-screen layout with a left navigation panel (640px fixed) and right detail panel.
+Split-screen layout with a left navigation panel and a right detail panel. The split is a two-column grid on `.app-body`; the left track is `minmax(0, var(--qj-arc-column))` where `--qj-arc-column` is `clamp(320px, 42%, 640px)`, so the 42% governs only between roughly 762px and 1524px of grid width — above that the 640px maximum pins it, below that the 320px minimum does. Both tracks are `minmax(0, ...)` — a bare `1fr` or a definite track would let content overflow the viewport at narrow widths, and the outer `minmax(0, ...)` is what lets the left track fall below its own 320px minimum rather than forcing document scroll. The panels never stack; below ~320px the left track shrinks with the container instead.
 
 **Entry (`App.tsx`)**
 - Holds no state of its own; it composes the feature hooks and wires their handlers into the two panels
@@ -141,7 +141,10 @@ Split-screen layout with a left navigation panel (640px fixed) and right detail 
 - Uses camelCase (`arcId`, not `arc_id`) throughout
 
 **Patterns to follow**
-- Colors, fonts and radii live as `--qj-*` custom properties in `src/index.css`; component CSS references them with `var()` rather than hard-coding literals
+- Colors, fonts, radii and the layout lengths (`--qj-shell-pad-x`/`-y`, `--qj-shell-gap`, `--qj-arc-column`) live as `--qj-*` custom properties in `src/index.css`; component CSS references them with `var()` rather than hard-coding literals. `--qj-arc-column` is the one token holding a percentage, so its value depends on the element consuming it
+- Responsive sizing is fluid, not stepped: the layout lengths are `clamp()` curves whose maximum is the original fixed value, so a wide screen renders unchanged. There are no width breakpoints at all; the single media query is a height one, `@media (max-height: 800px)` at the end of `App.css`, so a wide-but-short screen is the one case that does not render as before. It redefines `--qj-shell-pad-y` and `--qj-shell-gap` on `:root` rather than overriding properties, so every consumer (including `.app-status-text`, which renders outside `.app-shell`) follows. That `:root` ties with the base one in `index.css` on specificity and wins only because `App.css` loads after it — moving either import would silently revert the short-screen sizes
+- Font-size clamps take a `rem + vw` middle term, never `vw` alone: page zoom narrows the CSS viewport by the same factor it magnifies, so a pure `vw` term cancels itself out and the text never grows (WCAG 1.4.4). See the comment on `.app-header-title`
+- `.arc-list-panel` is `overflow: hidden`, so anything overflowing the left panel is clipped with no scrollbar and becomes unreachable by mouse — rows there must wrap rather than overflow (`overflow-wrap: anywhere` on titles, `flex-wrap` plus `flex-basis: 100%` and `order: 1` on the arc inline-edit error). The right panel scrolls rather than clips, which hides the same problem instead of fixing it: any text that can hold a long unbroken token (`.quest-detail-title-rest`, `.description-text`, `.quest-detail-meta`) needs `overflow-wrap: anywhere` too, or its min-content width pushes both grid tracks past the viewport
 - `React.memo` on all child components; `useCallback` on every handler returned from a feature hook
 - Separate `mutationError` state (distinct from fetch `error`) for create/update/delete failures
 - Error propagation: child catches, re-throws to parent via callback; parent sets `mutationError`

@@ -104,6 +104,19 @@
   --qj-radius-panel: 6px;
   --qj-radius-arc: 60px 12px 55px 8px / 10px 45px 8px 50px;
   --qj-radius-quest-selected: 40px 10px 35px 8px / 8px 30px 8px 35px;
+
+  /* Layout. The app is one screen: the shell fills the viewport and the two panels
+     share what the header leaves. These scale with the viewport so a half-screen
+     window keeps the detail panel readable; each clamp's max is the original fixed
+     value, so a wide screen renders exactly as before -- with one exception, the
+     @media (max-height: 800px) block at the end of App.css, which redefines two of
+     these below their own minimums for a wide-but-short screen. */
+  --qj-shell-pad-x: clamp(20px, 3vw, 56px);
+  --qj-shell-pad-y: clamp(16px, 2.4vw, 36px);
+  --qj-shell-gap: clamp(14px, 1.6vw, 22px);
+  /* Percentage token: unlike the rest, this resolves against the consumer's inline
+     size rather than being a fixed value (today's consumer is .app-body). */
+  --qj-arc-column: clamp(320px, 42%, 640px);
 }
 
 button {

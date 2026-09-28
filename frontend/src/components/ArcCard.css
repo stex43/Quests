@@ -5,6 +5,7 @@
 .arc-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -66,6 +67,7 @@
 
 .arc-title-input {
   flex: 1;
+  min-width: 0; /* so flex: 1 can shrink past the input's intrinsic width */
   background: var(--qj-field);
   border: 1px solid var(--qj-field-border);
   border-radius: var(--qj-radius);
@@ -94,10 +96,19 @@
   outline-offset: 2px;
 }
 
+/* Takes a line of its own (like .quest-detail-title-error) instead of squeezing the
+   header row: .arc-list-panel clips rather than scrolls, so anything that overflows
+   here -- the edit and delete buttons included -- is gone with no way to reach it.
+   order: 1 because this is item 3 of 4 in DOM order: at the default order the
+   flex-basis: 100% break lands between the input and the icon buttons and makes
+   three lines ([expand + input], [error], [edit + delete]). Ordering it last
+   collects [expand, input, edit, delete] on line 1 and leaves the error alone
+   on line 2, which is the two-line layout this rule is for. */
 .arc-title-error {
+  order: 1;
+  flex-basis: 100%;
   font-size: 13px;
   color: var(--qj-error);
-  white-space: nowrap;
 }
 
 .quest-list {

@@ -54,6 +54,9 @@
 
 .quest-title {
   flex: 1;
+  /* The left panel clips rather than scrolls, so a long unbroken title must break. */
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: var(--qj-font-body);
   font-size: 18.5px;
   color: var(--qj-ink);

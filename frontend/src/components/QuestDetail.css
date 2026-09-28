@@ -2,7 +2,7 @@
   min-height: 0;
   overflow-y: auto;
   position: relative;
-  padding: 34px 44px;
+  padding: clamp(20px, 2.4vw, 34px) clamp(20px, 3vw, 44px);
   background: var(--qj-panel-right);
   border: 3px solid var(--qj-panel-border);
   border-left: 1px solid var(--qj-panel-seam);
@@ -58,7 +58,7 @@
 .quest-detail-dropcap {
   font-family: var(--qj-font-display);
   font-weight: 900;
-  font-size: 44px;
+  font-size: clamp(2.125rem, 1.1875rem + 1.6667vw, 2.75rem);
   color: var(--qj-crimson);
   line-height: 1;
 }
@@ -66,7 +66,7 @@
 .quest-detail-title-rest {
   font-family: var(--qj-font-heading);
   font-weight: 700;
-  font-size: 30px;
+  font-size: clamp(1.5rem, 0.9375rem + 1vw, 1.875rem);
   color: var(--qj-ink);
   /* Long unbroken titles must break rather than widen the panel. */
   min-width: 0;
@@ -80,6 +80,7 @@
   font-size: 14px;
   color: var(--qj-ink-muted);
   margin: 6px 0 22px 2px;
+  overflow-wrap: anywhere;
 }
 
 /* The wax stamp: hollow ring while the deed is open, filled and sealed when done. */
@@ -222,6 +223,9 @@
   line-height: 1.75;
   color: var(--qj-ink);
   margin: 0 0 30px 0;
+  /* Long unbroken descriptions (a pasted URL) must break rather than widen the panel. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .empty-description {
