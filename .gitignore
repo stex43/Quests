@@ -20,3 +20,7 @@ __pycache__/
 
 # Local Claude config
 .claude/settings.local.json
+
+# Deploy console runtime state
+deploy/logs/
+deploy/config.local.json

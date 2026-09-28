@@ -6,7 +6,8 @@
 - [project_exception_handling.md](project_exception_handling.md) — Domain-exception + centralized HTTP translation layer conventions (DomainError hierarchy, handler status map, ErrorResponse shape, no HTTPException in routers)
 - [project_frontend_patterns.md](project_frontend_patterns.md) — Established frontend conventions for the Quests React/TypeScript project (memo, useCallback, error states, arcsRef, API layer, accessibility)
 - [project_lan_serving.md](project_lan_serving.md) — App is served to LAN devices from a laptop whose IP changes; LAN-wide CORS is intended, LanRequestGuard covers CSRF/rebinding; settled decisions (no .lan), what the re-review resolved, and what stays open on purpose
-- [project_deploy_rig.md](project_deploy_rig.md) — Pull-based signed-tag deploy with the machinery outside the repo, the compose dev/prod split, and the script invariants that each fix a confirmed bug
+- [project_deploy_rig.md](project_deploy_rig.md) — HISTORICAL: the retired signed-tag Task Scheduler pipeline, decommissioned 2026-09-28; kept for the compose dev/prod split notes and the still-relevant self-hosted-runner warning
+- [project_deploy_console.md](project_deploy_console.md) — The sole deploy mechanism since 2026-09-28: manually-invoked `py -m deploy` CLI (`deploy/` package, PR #23), its invariants, and round-1 review gaps (all fixed same-day) to check for regression
 
 ## Feedback
 - [feedback_focus_review_scope.md](feedback_focus_review_scope.md) — Settled focus-indicator decisions not to re-raise, and the user's preference for findings that clicking cannot surface

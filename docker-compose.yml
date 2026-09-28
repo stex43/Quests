@@ -51,7 +51,7 @@ services:
         VITE_BACKEND_PORT: "${BACKEND_PORT:-8000}"
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     # nginx:alpine has busybox wget. The dev override swaps the image for the node:22-alpine
     # Vite server on the same port, which also has busybox wget and also answers 200 on /,
     # so this one check is valid for both stacks. Probe 127.0.0.1, not localhost: the
