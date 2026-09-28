@@ -25,7 +25,7 @@ Backend uses synchronous SQLAlchemy (not async) throughout — `database.py` has
 
 ## List ordering (added 2026-09-28)
 - `Arc` and `Quest` have a server-set `created_at` (`DateTime(timezone=True)`, `server_default=func.now()`), not exposed in the API
-- Arcs: `created_at DESC, id DESC` in `ArcRepository.get_all`; quests: `created_at ASC, id ASC` via `Arc.quests` `relationship(order_by=...)` and `QuestRepository.get_by_arc`
+- Arcs: `created_at DESC, id DESC` in `ArcRepository.get_all`; quests: `created_at ASC, id ASC` via `Arc.quests` `relationship(order_by=...)`
 - The directions mirror the frontend (`useArcs.create` prepends, `useQuests.create` appends) — if either insertion side changes, the other must follow or a reload reorders the list
 - Rows that existed before migration `d2ccfda40961` share one timestamp, so their order is by UUID — arbitrary but stable; the user was told
 
@@ -33,13 +33,14 @@ Backend uses synchronous SQLAlchemy (not async) throughout — `database.py` has
 - Three learning-note `# todo` comments in `database.py` (`wtf is engine`, `autocommit`, `yield`) — should not be in production source. Low priority.
 - No pagination on `GET /arcs` (`# todo: paging` in `routers/arcs.py`).
 - IDs are generated in Python (`uuid.uuid4()`) rather than at the DB level.
-- `GET /` root endpoint returns `{"Hello": "World"}` — dead scaffolding code.
 
-## Open findings from the 2026-09-28 full review (reported, not yet fixed or decided)
-Reference these as known rather than re-reporting them as new; flag if one gets worse.
-- `dependencies.py` comment (and CLAUDE.md) claim that inlining `Depends(get_db)` twice would create two sessions — wrong, FastAPI caches a dependency per request. The alias is fine; the warning is inaccurate.
-- 500s from the `Exception` handler carry no CORS headers (Starlette routes it to `ServerErrorMiddleware`, outside `CORSMiddleware`), so the browser sees "Failed to fetch".
+## Findings from the 2026-09-28 full review
+Fixed the same day (check for regressions, don't re-derive):
+- `dependencies.py`'s comment and CLAUDE.md now correctly say FastAPI caches `get_db` per request (the old "two sessions if inlined" warning was wrong).
+- 500s: the `Exception` handler (which Starlette runs in `ServerErrorMiddleware`, outside CORS, and which re-raised → double traceback) was replaced by the pure-ASGI `UnhandledErrorMiddleware` in `middleware.py`, innermost (CORS > LanRequestGuard > UnhandledErrorMiddleware > app). It logs once via `uvicorn.error` and returns the `internal_error` ErrorResponse only if the response hasn't started; otherwise it re-raises. Do not re-add an `add_exception_handler(Exception, ...)`.
+- Dead code removed: `update_arc`'s `try/except IntegrityError` (no constraint on an arc title can fire), `GET /`, `GET /quests/{id}`, `GET /arcs/{id}/quests`, `QuestRepository.get_by_arc`. `TODO.md`'s stale "[Critical] IntegrityError" item removed.
+
+Still open:
 - `ArcCard` `cancelledRef` is not reset in `startEdit` (unconfirmed across browsers): a stale `true` could swallow the next edit's first blur-commit.
-- Dead `try/except IntegrityError` in `routers/arcs.py` `update_arc` (no constraint on an arc title can fire); unused `GET /quests/{id}`, `GET /arcs/{id}/quests`.
-- `TODO.md`'s "[Critical] IntegrityError handler" item is stale — routers already catch it.
+- The compose backend healthcheck hits `GET /arcs` (loads everything every 10s); `/health` is cheaper but doesn't touch the DB — a judgment call, not raised to the user yet.
 - Simplification ideas offered, user has not decided: `key={selectedQuest?.id}` on `QuestDetail` to drop most of its mid-save focus machinery; `useSelectedQuest` storing only the id; one handler for all `DomainError` subclasses; shrinking CLAUDE.md. Don't push these again unless asked.

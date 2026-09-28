@@ -47,12 +47,6 @@ class QuestRepository:
     def get(self, quest_id: uuid.UUID) -> models.Quest | None:
         return self.db.get(models.Quest, quest_id)
 
-    def get_by_arc(self, arc_id: uuid.UUID) -> list[models.Quest]:
-        stmt = (
-            select(models.Quest).where(models.Quest.arc_id == arc_id).order_by(models.Quest.created_at, models.Quest.id)
-        )
-        return list(self.db.scalars(stmt).all())
-
     def update(self, quest: models.Quest, title: str | None, description: str | None, arc_id: uuid.UUID | None) -> None:
         # None means "omitted — skip this field". Callers must reject explicit null before calling this.
         if title is not None:

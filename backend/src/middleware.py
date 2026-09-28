@@ -1,10 +1,14 @@
+import logging
 import re
 from urllib.parse import urlsplit
 
 from starlette.responses import JSONResponse
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from src.schemas import ErrorResponse
+
+# uvicorn configures this logger; an unconfigured name would fall back to the bare last-resort handler.
+logger = logging.getLogger("uvicorn.error")
 
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
@@ -73,6 +77,39 @@ class LanRequestGuard:
         if not parts.netloc or not host:
             return False
         return parts.scheme.lower() == scheme.lower() and parts.netloc.lower() == host.lower()
+
+
+class UnhandledErrorMiddleware:
+    """Turns an unhandled exception into a 500 ErrorResponse, logged once.
+
+    Replaces an `Exception` handler, which Starlette runs in ServerErrorMiddleware outside
+    CORSMiddleware (so the browser saw no CORS headers) and which re-raises (a second traceback).
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        response_started = False
+
+        async def tracking_send(message: Message) -> None:
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, tracking_send)
+        except Exception:
+            # Headers already sent: a 500 can no longer be delivered, so let the server abort the response.
+            if response_started:
+                raise
+            logger.exception("Unhandled exception during request to %s", scope["path"])
+            await _reject(500, "internal_error", "An internal error occurred")(scope, receive, send)
 
 
 def _reject(status_code: int, error: str, message: str) -> JSONResponse:

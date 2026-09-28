@@ -58,11 +58,13 @@ Never propose a self-hosted GitHub Actions runner while the repo is public.
 8. `get_status()` silently swallowed a failed `docker compose ps` — fixed: reports
    `stderr` on non-zero exit instead of returning a misleadingly-empty status.
 
-**Open (found 2026-09-28, not fixed):** fix #5 introduced a race — `_stream_process`'s
-`finally` also runs on normal completion, before `proc.wait()`. After stdout hits EOF the
-process may not be reaped yet, so `poll()` is `None`, it gets `terminate()`d and a
-successful step can surface as `CalledProcessError`. Fix: `wait()` inside the `try`,
-terminate only on the exception path.
+**Fixed 2026-09-28 (round 2):** `_stream_process` used to `terminate()` in a `finally`
+that also ran on normal completion, before `proc.wait()`, so a successful step could
+surface as `CalledProcessError` (-15). It now runs inside `with Popen(...)`, waits inside
+the `try`, and only terminates → waits 10s → kills under `except BaseException`.
+Still open, pre-existing and minor: `run_deploy`'s `finally: yield` raises "generator
+ignored GeneratorExit" when Ctrl+C lands inside the CLI's `emit()`; the child is still
+terminated.
 
 A future review of `deploy/` should confirm these stayed fixed rather than re-deriving
 them; if any regress, that's worth flagging as a regression, not a fresh finding.
