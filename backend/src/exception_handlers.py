@@ -3,35 +3,14 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from src.exceptions import ConflictError, DomainError, DomainValidationError, NotFoundError
+from src.exceptions import DomainError
 from src.schemas import ErrorResponse
 
 
 async def domain_error_handler(request: Request, exc: DomainError) -> JSONResponse:
     return JSONResponse(
-        status_code=400,
-        content=ErrorResponse(error="domain_error", message=exc.message, details=exc.details).model_dump(),
-    )
-
-
-async def not_found_handler(request: Request, exc: NotFoundError) -> JSONResponse:
-    return JSONResponse(
-        status_code=404,
-        content=ErrorResponse(error="not_found", message=exc.message, details=exc.details).model_dump(),
-    )
-
-
-async def conflict_handler(request: Request, exc: ConflictError) -> JSONResponse:
-    return JSONResponse(
-        status_code=409,
-        content=ErrorResponse(error="conflict", message=exc.message, details=exc.details).model_dump(),
-    )
-
-
-async def validation_error_handler(request: Request, exc: DomainValidationError) -> JSONResponse:
-    return JSONResponse(
-        status_code=400,
-        content=ErrorResponse(error="validation_error", message=exc.message, details=exc.details).model_dump(),
+        status_code=exc.status_code,
+        content=ErrorResponse(error=exc.error, message=exc.message, details=exc.details).model_dump(),
     )
 
 

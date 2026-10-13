@@ -30,7 +30,6 @@ Backend uses synchronous SQLAlchemy (not async) throughout — `database.py` has
 - Rows that existed before migration `d2ccfda40961` share one timestamp, so their order is by UUID — arbitrary but stable; the user was told
 
 ## Remaining known gaps
-- Three learning-note `# todo` comments in `database.py` (`wtf is engine`, `autocommit`, `yield`) — should not be in production source. Low priority.
 - No pagination on `GET /arcs` (`# todo: paging` in `routers/arcs.py`).
 - IDs are generated in Python (`uuid.uuid4()`) rather than at the DB level.
 
@@ -43,4 +42,14 @@ Fixed the same day (check for regressions, don't re-derive):
 Still open:
 - `ArcCard` `cancelledRef` is not reset in `startEdit` (unconfirmed across browsers): a stale `true` could swallow the next edit's first blur-commit.
 - The compose backend healthcheck hits `GET /arcs` (loads everything every 10s); `/health` is cheaper but doesn't touch the DB — a judgment call, not raised to the user yet.
-- Simplification ideas offered, user has not decided: `key={selectedQuest?.id}` on `QuestDetail` to drop most of its mid-save focus machinery; `useSelectedQuest` storing only the id; one handler for all `DomainError` subclasses; shrinking CLAUDE.md. Don't push these again unless asked.
+- Simplification idea offered, user has not decided: `key={selectedQuest?.id}` on `QuestDetail` to drop most of its mid-save focus machinery. Don't push this again unless asked.
+
+## 2026-10-13 simplification pass (six parts, done in parallel by separate coder agents)
+All verified correct, no regressions:
+- `useSelectedQuest` now stores only `selectedQuestId` and derives `Quest` via a lookup across `arc.quests`/`arc.recentCompleted` on every render (returns the actual object reference from `arcs`, so no extra re-renders, and a deleted quest/arc naturally resolves to `null`). `QuestDetail` was deliberately left unchanged — its `prevQuestIdRef`/`pendingFocusRef` mid-save-identity-guard machinery still works unmodified because it only reacts to `quest?.id` changes, which behave the same under the new derivation.
+- Backend `DomainError` hierarchy collapsed to one handler — see `project_exception_handling.md`.
+- `database.py`'s three learning-note `# todo` comments replaced with one factual `autoflush=False` comment — the known gap from this file's earlier "Remaining known gaps" entry is resolved, don't re-flag.
+- CLAUDE.md shrunk 165→71 lines; spot-checked every one-line component description (incl. the archive/seal components `SealedArcHeader`/`CompletedFooter`/`CompletedPreviewList`/`ArchiveList`/`useSealPrompt`/`useViewNavigation`) against source — all accurate.
+- `deploy/` package (cli.py/core.py/config.py) replaced by a single root `deploy.py`, intentionally dropping log files, secret redaction, health-check retries, and status/logs subcommands (accepted scope reduction, don't re-flag). SSH→HTTPS regex still covers both scp-style and `ssh://` forms; `.env.docker` check still precedes `docker compose up`; subprocess calls use `check=True`.
+  - **Regression reintroduced:** the new `deploy.py` only checks `(clone_path / ".git").exists()` to decide clone-vs-fetch, which is exactly the naive check round-1 review (see `project_deploy_console.md` finding #4) replaced with `_is_valid_clone` because a Ctrl+C during the first clone leaves a half-cloned `.git` dir that looks "already cloned" forever after. Worth flagging again if seen; low/medium severity since it's manually operated and self-diagnosable (user can just delete the clone), but it is a real regression, not a fresh nit.
+- `.claude/agents/coder.md`: the two changed lines (sync-`Session`/no-`async def` guidance, and "no backend test suite yet") are accurate. Note: the untouched line "Do not mark done if tests are failing" is stale now that neither backend nor frontend has any test suite/script — pre-existing, not introduced by this pass, low priority to eventually clean up.

@@ -3,22 +3,17 @@ from sqlalchemy.orm import sessionmaker
 
 from src.settings import settings
 
-# todo: wtf is engine and SessionLocal
 engine = create_engine(settings.database_url, echo=settings.debug)
-# todo: what is autocommit and autoflush and why false
+# autoflush=False: writes hit the DB only on explicit flush/commit, not implicitly before every query.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db():
     db = SessionLocal()
     try:
-        # todo: what is yield in python
         yield db
     except Exception:
         db.rollback()
         raise
     finally:
         db.close()
-
-
-# todo: async?
