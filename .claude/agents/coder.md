@@ -17,7 +17,7 @@ Implement features, fix bugs, and make code changes as instructed. Do not invoke
 
 ## Backend (FastAPI/Python)
 - Use Pydantic models for all request/response schemas — no raw dicts
-- Use async/await correctly — no blocking calls inside async endpoints
+- Route handlers are sync `def` using the sync SQLAlchemy `Session` — don't introduce `async def` endpoints without a reason
 - Use dependency injection for shared resources (db session, auth)
 - Return correct HTTP status codes with meaningful error messages
 - UUID-based primary keys follow existing conventions
@@ -28,6 +28,7 @@ Implement features, fix bugs, and make code changes as instructed. Do not invoke
 - Follow existing component patterns before inventing new ones
 
 ## When done
-- Run existing tests to confirm nothing is broken (`pytest` for backend)
+- Backend: run `ruff check src/` (and `ruff format src/`) — there is no backend test suite yet
+- Frontend: run `npm run build` and `npm run lint` to confirm nothing is broken
 - Write a brief summary of what you changed and why
 - Do not mark done if tests are failing

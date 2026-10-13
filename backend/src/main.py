@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from src import exception_handlers
-from src.exceptions import ConflictError, DomainError, DomainValidationError, NotFoundError
+from src.exceptions import DomainError
 from src.middleware import LanRequestGuard, UnhandledErrorMiddleware
 from src.routers import arcs, quests
 from src.settings import settings
@@ -28,9 +28,6 @@ app.add_middleware(
 )
 
 app.add_exception_handler(DomainError, exception_handlers.domain_error_handler)
-app.add_exception_handler(NotFoundError, exception_handlers.not_found_handler)
-app.add_exception_handler(ConflictError, exception_handlers.conflict_handler)
-app.add_exception_handler(DomainValidationError, exception_handlers.validation_error_handler)
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_handler)
 
 

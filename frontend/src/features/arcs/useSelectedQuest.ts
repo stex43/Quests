@@ -15,39 +15,16 @@ function findQuestById(arcs: Arc[], id: string): Quest | null {
 }
 
 export function useSelectedQuest(arcs: Arc[]) {
-  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
+  const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
 
   const select = useCallback((quest: Quest) => {
-    setSelectedQuest(quest);
+    setSelectedQuestId(quest.id);
   }, []);
 
-  // Reconcile the selected quest with the latest arcs during render. This keeps
-  // selection in sync when the selected quest is updated (fresh object), or
-  // cleared when its quest or containing arc is deleted, without a setState-in-
-  // effect cascade.
-  let reconciled = selectedQuest;
-  if (selectedQuest !== null) {
-    const found = findQuestById(arcs, selectedQuest.id);
-    if (found === null) {
-      reconciled = null;
-    } else if (
-      // This must compare every user-visible field of Quest; add a clause here
-      // if Quest gains a new field, otherwise selection can go stale. findQuestById
-      // above already covers both buckets a quest can be found in, so no extra check
-      // is needed here for that.
-      found.title !== selectedQuest.title ||
-      found.description !== selectedQuest.description ||
-      found.arcId !== selectedQuest.arcId ||
-      found.completed !== selectedQuest.completed ||
-      found.completedOn !== selectedQuest.completedOn
-    ) {
-      reconciled = found;
-    }
-  }
+  // Derived fresh on every render, so there is nothing to keep in sync with `Quest`'s
+  // fields -- an id whose quest was deleted (or whose containing arc was deleted)
+  // naturally resolves to null here instead of needing a separate clear-on-delete path.
+  const selectedQuest = selectedQuestId !== null ? findQuestById(arcs, selectedQuestId) : null;
 
-  if (reconciled !== selectedQuest) {
-    setSelectedQuest(reconciled);
-  }
-
-  return { selectedQuest: reconciled, select };
+  return { selectedQuest, select };
 }

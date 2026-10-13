@@ -1,8 +1,21 @@
 ---
 name: project_deploy_console
-description: The manual `py -m deploy` CLI (deploy/ package, added PR #23) — its invariants, and the recurring gap shapes found in round-1 review
+description: The manual deploy mechanism (now root `deploy.py`, previously the `deploy/` package added PR #23) — its invariants, and the recurring gap shapes found in round-1 review
 type: project
 ---
+
+**Superseded 2026-10-13:** the `deploy/` package (`cli.py`/`core.py`/`config.py`/`__main__.py`)
+was deleted and replaced by a single root-level `deploy.py` (run as `py deploy.py`, not
+`py -m deploy`). This was an intentional, user-accepted scope reduction: log files, secret
+redaction, health-check retries, and the `status`/`logs` subcommands are all gone — it now
+only does clone-or-fetch+reset, the `.env.docker` existence check, and `docker compose up -d
+--build`. Don't flag those omissions as bugs. Everything below that describes `deploy/`
+internals (cli.py, core.py, _stream_process, etc.) is historical context for what round-1
+fixed — useful for recognizing a *regression* in the new file, not a description of current
+code. One regression already found in the rewrite: `deploy.py` decides clone-vs-fetch with a
+bare `(clone_path / ".git").exists()` check, the same naive check finding #4 below replaced
+with `_is_valid_clone` — a Ctrl+C during the first clone now leaves a permanently-ambiguous
+half-clone again.
 
 Since PR #23 (2026-09-28) this is the **sole** deploy mechanism — it replaced the
 earlier scheduled pipeline outright (retired and torn down the same day).

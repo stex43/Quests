@@ -1,164 +1,71 @@
 # CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository.
 
 ## Project Overview
-
-Quests is a full-stack web app with:
-- **Backend**: FastAPI + SQLAlchemy + PostgreSQL, located in `backend/`
-- **Frontend**: React 19 + TypeScript + Vite, located in `frontend/`
-- **Infrastructure**: Docker Compose manages PostgreSQL, the backend and the frontend. `docker-compose.yml` is the production stack (frontend built and served by nginx); `docker-compose.override.yml`, auto-loaded by a bare `docker compose up`, swaps in the dev conveniences (Vite dev server, source mounts)
+Quests: FastAPI + SQLAlchemy + PostgreSQL backend (`backend/`), React 19 + TypeScript + Vite frontend (`frontend/`). Docker Compose manages all three; `docker-compose.yml` is the production stack (nginx-served frontend), `docker-compose.override.yml` (auto-loaded by a bare `docker compose up`) swaps in dev conveniences (Vite dev server, source mounts).
 
 ## Backend Commands
-
-All backend commands run from the `backend/` directory with a `.env` file present (see Environment below).
-
+Run from `backend/` with a `.env` file present (see Environment).
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run dev server (requires DB running)
-uvicorn src.main:app --reload
-
-# Run migrations
-alembic upgrade head
-
-# Generate a new migration after model changes
-alembic revision --autogenerate -m "description"
-
-# Lint (ruff comes from requirements-dev.txt, pinned to match CI)
-ruff check src/
-ruff format src/
+pip install -r requirements.txt   # install deps
+uvicorn src.main:app --reload     # run dev server (requires DB running)
+alembic upgrade head              # run migrations
+alembic revision --autogenerate -m "description"   # generate migration after model changes
+ruff check src/ && ruff format src/   # lint (pinned in requirements-dev.txt, matches CI)
 ```
 
-`requirements-dev.txt` pulls in `requirements.txt` plus a pinned `ruff`. CI installs that
-same pin directly; keep the two in step or the hook and the workflow will disagree.
-
 ## Frontend Commands
-
-All frontend commands run from the `frontend/` directory.
-
+Run from `frontend/`.
 ```bash
 npm install
-npm run dev       # start Vite dev server
+npm run dev       # Vite dev server
 npm run build     # tsc + vite build
 npm run lint      # eslint
 npm run preview   # preview production build
 ```
 
 ## Docker (Full Stack)
-
 ```bash
-docker compose up --build                      # dev stack: db + backend + frontend
+docker compose up --build                            # dev stack: db + backend + frontend
 docker compose -f docker-compose.yml up -d --build   # production stack
 ```
-
-A bare `docker compose` auto-loads `docker-compose.override.yml` on top of the base file and gives the dev stack: the `frontend` service runs the Vite dev server on 5173 with `frontend/src` mounted, `backend/src` is mounted too, and Postgres is published on `127.0.0.1:5432` (loopback only, for a local DB GUI). Source edits hot-reload; changes to `vite.config.ts` or dependencies need `--build`.
-
-Passing `-f docker-compose.yml` skips the override and gives the production stack: the frontend is built (`vite build`) and served by nginx on 5173, there are no source mounts (the images are the source of truth), and Postgres is not published at all — the backend reaches it over the compose network as host `db`.
-
-The frontend resolves the API base URL at runtime: the host comes from `window.location` and the port from `VITE_BACKEND_PORT` (default 8000), while `VITE_BACKEND_ORIGIN` overrides both. So the app works on whatever LAN IP the page was opened on, with no rebuild. In the production image `VITE_BACKEND_PORT` is baked in at build time (compose passes it as a build arg), but the host is still read from `window.location`, so the LAN-IP behaviour is unchanged. Set `BACKEND_PORT` (shell or root `.env`, default 8000) to move the backend; compose passes it to both services.
+Bare `docker compose` = dev stack (Vite dev server + source mounts, Postgres on `127.0.0.1:5432` for a local DB GUI). `-f docker-compose.yml` = production stack (nginx-served frontend, no source mounts, Postgres not published). The frontend resolves its API base URL at runtime (`window.location` host + `VITE_BACKEND_PORT`, or `VITE_BACKEND_ORIGIN` override) so it works on any LAN IP with no rebuild; `BACKEND_PORT` (default 8000) moves the backend for both services.
 
 ## Environment
-
-Backend reads env vars from a `.env` file (or `.env.docker` for the Docker service). Copy `backend/.env.example` to `backend/.env` and fill in values. `backend/.env.docker` is not tracked either — create it the same way, with `POSTGRES_HOST=db`; compose's `db` service reads its credentials from that file too, so both containers stay in sync. Required vars:
-
-```
-POSTGRES_USER=
-POSTGRES_PASSWORD=
-POSTGRES_HOST=
-POSTGRES_PORT=
-POSTGRES_DB=
-```
-
-Optional vars:
-
-```
-DEBUG=False        # set to True to enable SQLAlchemy query logging
-CORS_ORIGINS=[]   # e.g. ["http://localhost:5173"]
-CORS_ORIGIN_REGEX= # defaults to a LAN-only pattern (localhost, private IPs, *.local); empty disables it; read as-is, not JSON
-ALLOWED_HOST_REGEX= # same LAN-only default, matched against the Host header; empty disables the host check
-```
-
-Wrap custom `*_REGEX` values in single quotes: compose's `env_file` parser expands `$` and python-dotenv processes escapes inside double quotes.
-
-The `APP_ENV` env var determines which file is loaded: `.env.{APP_ENV}` if set, otherwise `.env`.
+Backend reads env vars from `.env` (or `.env.docker` for Docker; copy from `backend/.env.example`, using `POSTGRES_HOST=db` for the Docker one). Required: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`. Optional: `DEBUG` (SQL logging), `CORS_ORIGINS` (JSON list), `CORS_ORIGIN_REGEX`/`ALLOWED_HOST_REGEX` (LAN-only default, read as-is not JSON, empty disables each — wrap in single quotes). `APP_ENV` selects `.env.{APP_ENV}` over plain `.env`.
 
 ## Architecture
-
 ### Backend (`backend/src/`)
-
-- `main.py` — FastAPI app setup: middleware, exception handler registration, the `/health` route, and router registration; middleware order, outermost first, is `CORSMiddleware` > `LanRequestGuard` > `UnhandledErrorMiddleware` > app
-- `middleware.py` — `LanRequestGuard`, a pure ASGI middleware: a `Host` not matching `allowed_host_regex` gets 400 (DNS-rebinding defence), and an unsafe-method request whose `Origin` is neither a CORS-allowed origin nor same-origin with the (already validated) `Host` gets 403 (no `Origin` passes, `null` does not; same-origin is what keeps Swagger's "Try it out" working when `CORS_ORIGIN_REGEX` is empty); it builds its own `ErrorResponse` bodies and is registered before `CORSMiddleware` so CORS wraps it and still answers preflights. Also `UnhandledErrorMiddleware`, also pure ASGI and inside the guard: it turns any unhandled exception into a 500 `internal_error` `ErrorResponse` and logs it once via the `uvicorn.error` logger (so it gets uvicorn's formatted handler) (re-raising instead if the response already started). It replaces an `Exception` handler, which Starlette would run in `ServerErrorMiddleware` outside CORS, so the browser saw a CORS failure instead of the body
-- There are no backend tests yet. When they are added, they must construct `TestClient(app, base_url="http://localhost")` (or set `ALLOWED_HOST_REGEX=` before importing `src.main`), because the guard rejects the default `testserver` host with 400 and `main.py` reads the regex at import time
-- `routers/` — `arcs.py` and `quests.py` `APIRouter`s holding the route handlers
-- `dependencies.py` — `DbSession = Annotated[Session, Depends(get_db)]` alias plus the `ArcRepo`/`QuestRepo` dependency aliases; FastAPI caches `get_db` per request, so the handler and both repos share one session
-- `schemas.py` — Pydantic request/response schemas; titles use `ConstrainedStr` (min 1, max 100), description fields use a bare `Field(max_length=1000)` with no minimum, so an empty description is valid; response schemas have `model_config = ConfigDict(from_attributes=True)`
-- `repositories.py` — `ArcRepository` and `QuestRepository`; each takes `Session` in `__init__`; they only stage work on the session (`add`/attribute mutation/`delete`) and never commit or refresh — the route handlers own `commit()`/`refresh()`; `get_all` uses `selectinload` for eager loading
-- `models.py` — SQLAlchemy ORM models (`Arc`, `Quest`); `Quest.arc` has `lazy="raise"`
-- `database.py` — engine (`echo` gated on `settings.debug`), `SessionLocal`, and `get_db` with explicit rollback on exception
-- `settings.py` — `pydantic-settings` config; constructs `database_url` from individual Postgres vars; `debug: bool = False`; `cors_origin_regex` and `allowed_host_regex` default to `LAN_CORS_ORIGIN_REGEX` / `LAN_HOST_REGEX` (built from one shared host pattern) and are validated at startup (empty means off)
-- `exceptions.py` / `exception_handlers.py` — domain exceptions and the handlers registered in `main.py` that map them to `ErrorResponse` bodies; routers raise domain exceptions and never `HTTPException`, and the validation handler is what turns 422 into 400. There is deliberately no `Exception` handler; `UnhandledErrorMiddleware` covers 500s
+- `main.py` — app wiring: middleware, exception handlers, `/health`, routers; order (outermost first) `CORSMiddleware` > `LanRequestGuard` > `UnhandledErrorMiddleware` > app
+- `middleware.py` — `LanRequestGuard` (DNS-rebinding/CORS-origin guard on `Host`/`Origin`); `UnhandledErrorMiddleware` (unhandled exception → 500 `ErrorResponse`, logged once)
+- `routers/` — `arcs.py`, `quests.py` route handlers
+- `dependencies.py` — `DbSession`/`ArcRepo`/`QuestRepo` deps; FastAPI caches `get_db` per request so handler + both repos share one session
+- `schemas.py` / `repositories.py` — Pydantic schemas; repos stage work on the session only (never commit/refresh — route handlers own that)
+- `models.py` / `database.py` — `Arc`/`Quest` ORM models (`Quest.arc` is `lazy="raise"`); engine, `SessionLocal`, `get_db` (rolls back on exception)
+- `settings.py` — `pydantic-settings` config, incl. CORS/host regex validation at startup
+- `exceptions.py` / `exception_handlers.py` — `DomainError` base (`status_code`/`error` attrs) with `NotFoundError`/`ConflictError`/`DomainValidationError` subclasses (routers raise these, never `HTTPException`); one handler maps any `DomainError` to `ErrorResponse`, another turns `RequestValidationError` into 400 — no generic `Exception` handler (`UnhandledErrorMiddleware` covers 500s)
+- No backend tests yet. When added: construct `TestClient(app, base_url="http://localhost")` (or set `ALLOWED_HOST_REGEX=` before importing `src.main`) — the guard 400s the default `testserver` host
 
 ### Data Model
-
-- **Arc**: a story arc with a title; has many Quests (cascade delete)
-- **Quest**: belongs to an Arc via `arc_id` FK; has title, description, a `completed` flag, and a nullable `completed_on` date — the completer's local calendar day, resolved server-side from a client-supplied UTC offset (the time of day is deliberately not stored)
-- Both have a server-set `created_at` (not exposed in the API) that fixes list order: arcs newest first, quests oldest first, `id` as tiebreaker — matching the frontend prepending new arcs and appending new quests
-
+**Arc**: title; has many Quests (cascade delete). **Quest**: belongs to an Arc; title, description, `completed` flag, nullable `completed_on` date (completer's local calendar day, resolved server-side from a client UTC offset). Both have server-set `created_at` fixing list order: arcs newest first, quests oldest first, `id` tiebreaker.
 ### Migrations
-
-Alembic is configured in `backend/alembic/`. The `env.py` imports `models.Base.metadata` for autogenerate support and pulls the DB URL from `settings`. Run migrations from the `backend/` directory.
-
+Alembic in `backend/alembic/`; `env.py` imports `models.Base.metadata` and pulls the DB URL from `settings`. Run from `backend/`.
 ### Frontend (`frontend/src/`)
+Split-screen Tasks view (left nav panel + right detail panel) plus a separate Archive view for sealed arcs/completed quests.
+- `App.tsx` — composes the feature hooks, wires handlers into the two panels; one shared `useMutationError()` so any success clears either domain's error
+- `features/arcs/` — `useArcs.ts` (arc CRUD + loading/error), `useQuests.ts` (quest CRUD + optimistic `toggleComplete`), `useSelectedQuest.ts` (stores only the selected id, derives `Quest` from `arcs` each render), `useMutationError.ts` (`runMutation` sets/re-throws `mutationError`), `useSealPrompt.ts` (transient client-only "Seal this arc?" state), `useViewNavigation.ts` (Tasks/Archive tab + one-shot `focusArcId` to scroll to an arc)
+- `components/` — `ArcList.tsx` (Tasks left panel: expansion, arc creation, error dismissal); `ArcCard.tsx` (one arc: unsealed gets rename/delete/add-quest/seal-confirm, sealed renders `SealedArcHeader` instead with none of that); `SealedArcHeader.tsx` (collapsed sealed-arc header, expands to a completed preview in Tasks or the full quest list in Archive); `CompletedFooter.tsx` + `CompletedPreviewList.tsx` (collapsible "N completed" footer, default collapsed, expanding to a capped completions list with a "View all in Archive" link); `ArchiveList.tsx` (Archive left panel, filters every arc down to its completed quests); `QuestRow.tsx` (one quest row: selection highlight, delete); `QuestDetail.tsx` (right panel: title/description editor, completion toggle, `dd.MM.yyyy` completion date); `icons.tsx` (shared SVG icons)
+- `api.ts` — `BASE_URL` resolved per load; snake_case→camelCase mapping; `completeQuest`/`uncompleteQuest` send the UTC offset and return the updated quest
+- `types.ts` — camelCase throughout (`arcId`, not `arc_id`)
 
-Split-screen layout with a left navigation panel and a right detail panel. The split is a two-column grid on `.app-body`; the left track is `minmax(0, var(--qj-arc-column))` where `--qj-arc-column` is `clamp(320px, 42%, 640px)`, so the 42% governs only between roughly 762px and 1524px of grid width — above that the 640px maximum pins it, below that the 320px minimum does. Both tracks are `minmax(0, ...)` — a bare `1fr` or a definite track would let content overflow the viewport at narrow widths, and the outer `minmax(0, ...)` is what lets the left track fall below its own 320px minimum rather than forcing document scroll. The panels never stack; below ~320px the left track shrinks with the container instead.
-
-**Entry (`App.tsx`)**
-- Holds no state of its own; it composes the feature hooks and wires their handlers into the two panels
-- A single `useMutationError()` instance is shared by every hook, so any successful mutation clears a pending error from either domain — do not give a hook its own instance
-
-**State (`frontend/src/features/arcs/`)**
-- `useArcs.ts` — owns `arcs`, `loading`, `error`, and the arc create/update/remove mutations
-- `useQuests.ts` — quest create/update/remove plus `toggleComplete`, which optimistically updates, applies the server response, and rolls back on failure; it patches only the fields a mutation owns so concurrent edits are not clobbered
-- `useSelectedQuest.ts` — tracks the selected quest and re-syncs it from `arcs`; its equality check must list **every** user-visible field or the detail panel renders stale data
-- `useMutationError.ts` — `runMutation` wrapper that sets `mutationError` and re-throws, so callers must catch
-
-**Components (`frontend/src/components/`)**
-- `ArcList.tsx` — left panel container; manages arc expansion state, arc creation form, error dismissal
-- `ArcCard.tsx` — individual arc with expand/collapse, inline title editing, delete confirmation, and inline quest creation
-- `QuestRow.tsx` — single quest item with selection highlighting and delete button
-- `QuestDetail.tsx` — right panel; shows selected quest title/description with an inline editor. The complete/incomplete toggle is the circular wax stamp left of the title; the completion date reads as `dd.MM.yyyy` in the meta line under it
-- `icons.tsx` — reusable SVG icons (`PencilIcon`, `TrashIcon`)
-
-**API (`frontend/src/api.ts`)**
-- `BASE_URL` is resolved per page load (`resolveBaseUrl()`): page host + `VITE_BACKEND_PORT` (empty or unset means 8000), or `VITE_BACKEND_ORIGIN` (trailing slashes stripped); env vars are typed in `vite-env.d.ts`
-- `request()` helper with unified error handling (includes HTTP status + body in errors)
-- All API calls convert snake_case responses to camelCase (`RawArc`, `RawQuest` types for the mapping)
-- Methods: `getArcs`, `createArc`, `updateArc`, `deleteArc`, `createQuest`, `updateQuest`, `deleteQuest`, `completeQuest`, `uncompleteQuest`
-- `completeQuest`/`uncompleteQuest` return the updated quest (the endpoints return 200, not 204); `completeQuest` sends the browser's UTC offset so the backend can resolve the completer's local date
-
-**Types (`frontend/src/types.ts`)**
-- Uses camelCase (`arcId`, not `arc_id`) throughout
-
-**Patterns to follow**
-- Colors, fonts, radii and the layout lengths (`--qj-shell-pad-x`/`-y`, `--qj-shell-gap`, `--qj-arc-column`) live as `--qj-*` custom properties in `src/index.css`; component CSS references them with `var()` rather than hard-coding literals. `--qj-arc-column` is the one token holding a percentage, so its value depends on the element consuming it
-- Responsive sizing is fluid, not stepped: the layout lengths are `clamp()` curves whose maximum is the original fixed value, so a wide screen renders unchanged. There are no width breakpoints at all; the single media query is a height one, `@media (max-height: 800px)` at the end of `App.css`, so a wide-but-short screen is the one case that does not render as before. It redefines `--qj-shell-pad-y` and `--qj-shell-gap` on `:root` rather than overriding properties, so every consumer (including `.app-status-text`, which renders outside `.app-shell`) follows. That `:root` ties with the base one in `index.css` on specificity and wins only because `App.css` loads after it — moving either import would silently revert the short-screen sizes
-- Font-size clamps take a `rem + vw` middle term, never `vw` alone: page zoom narrows the CSS viewport by the same factor it magnifies, so a pure `vw` term cancels itself out and the text never grows (WCAG 1.4.4). See the comment on `.app-header-title`
-- `.arc-list-panel` is `overflow: hidden`, so anything overflowing the left panel is clipped with no scrollbar and becomes unreachable by mouse — rows there must wrap rather than overflow (`overflow-wrap: anywhere` on titles, `flex-wrap` plus `flex-basis: 100%` and `order: 1` on the arc inline-edit error). The right panel scrolls rather than clips, which hides the same problem instead of fixing it: any text that can hold a long unbroken token (`.quest-detail-title-rest`, `.description-text`, `.quest-detail-meta`) needs `overflow-wrap: anywhere` too, or its min-content width pushes both grid tracks past the viewport
-- `React.memo` on all child components; `useCallback` on every handler returned from a feature hook
-- Separate `mutationError` state (distinct from fetch `error`) for create/update/delete failures
-- Error propagation: child catches, re-throws to parent via callback; parent sets `mutationError`
-- Accessibility: `<button>` elements (not divs), ARIA labels on all interactive elements, `focus-visible` outlines (`--qj-focus-ring`, or `--qj-focus-ring-inverse` over the dark selected row; both defined in `index.css`) on everything except editable text fields, where the caret is deliberately the only focus indicator, Enter key support on inputs
+Patterns: `--qj-*` custom properties in `index.css` for colors/fonts/radii/layout, referenced via `var()`; `.arc-list-panel` clips overflow so its rows must wrap, not overflow; `React.memo` on all components, `useCallback` on hook-returned handlers; `mutationError` kept separate from fetch `error`, child catches and re-throws to parent; accessible `<button>`s with ARIA labels and `focus-visible` outlines (except editable text fields, caret-only).
 
 ## Workflow
-
 - For any coding, editing, or fixing tasks → delegate to the `coder` subagent
 - When asked to review code → delegate to the `reviewer` subagent
 - Run the reviewer automatically when it is obvious the user would want it (e.g. after completing a feature or a set of changes); otherwise ask first
 - After a review: if all issues are clear-cut and the fix is unambiguous, apply fixes automatically; if any issue requires a judgment call or the right approach is unclear, present the findings and ask before proceeding
 
 ## Code Style
-
 - Python: ruff with `E`, `W`, `F`, `I`, `UP` rules, line length 120, Python 3.12 target, double quotes
 - TypeScript: typescript-eslint with react-hooks and react-refresh plugins

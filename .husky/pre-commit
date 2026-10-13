@@ -7,6 +7,24 @@ restage() {
   done
 }
 
+# Print the entries of a newline-separated list ($1) that are Python files.
+filter_py() {
+  printf '%s\n' "$1" | while IFS= read -r file; do
+    case "$file" in
+      *.py) printf '%s\n' "$file" ;;
+    esac
+  done
+}
+
+# Print the entries of a newline-separated list ($1) that are TypeScript/TSX files.
+filter_ts() {
+  printf '%s\n' "$1" | while IFS= read -r file; do
+    case "$file" in
+      *.ts|*.tsx) printf '%s\n' "$file" ;;
+    esac
+  done
+}
+
 # Print the staged files ($1) that also have unstaged changes under $2. restage adds whole
 # files, so formatting one of these would sweep its unstaged hunks into the commit.
 partially_staged() {
@@ -37,15 +55,29 @@ fi
 
 if [ -n "$BACKEND_STAGED" ]; then
   cd "$ROOT/backend"
-  .venv/Scripts/ruff check --fix src/
-  .venv/Scripts/ruff format src/
+  BACKEND_PY="$(filter_py "$BACKEND_STAGED")"
+  if [ -n "$BACKEND_PY" ]; then
+    printf '%s\n' "$BACKEND_PY" | while IFS= read -r file; do
+      .venv/Scripts/ruff check --fix -- "${file#backend/}"
+    done
+    printf '%s\n' "$BACKEND_PY" | while IFS= read -r file; do
+      .venv/Scripts/ruff format -- "${file#backend/}"
+    done
+  fi
   restage "$BACKEND_STAGED"
 fi
 
 if [ -n "$FRONTEND_STAGED" ]; then
   cd "$ROOT/frontend"
-  node_modules/.bin/prettier src/ --write --log-level warn
-  node_modules/.bin/eslint src/ --ext .ts,.tsx --fix
+  printf '%s\n' "$FRONTEND_STAGED" | while IFS= read -r file; do
+    node_modules/.bin/prettier --write --log-level warn -- "${file#frontend/}"
+  done
+  FRONTEND_TS="$(filter_ts "$FRONTEND_STAGED")"
+  if [ -n "$FRONTEND_TS" ]; then
+    printf '%s\n' "$FRONTEND_TS" | while IFS= read -r file; do
+      node_modules/.bin/eslint --ext .ts,.tsx --fix -- "${file#frontend/}"
+    done
+  fi
   restage "$FRONTEND_STAGED"
   node_modules/.bin/tsc -b
 fi
