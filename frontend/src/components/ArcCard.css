@@ -218,3 +218,133 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Non-destructive counterpart to .arc-delete-confirm*: same layout (flex-wrap,
+   flex-basis: 100%, overflow-wrap: anywhere on the message, since .arc-list-panel
+   clips overflow with no scrollbar), --qj-control/-hover instead of the crimson
+   danger coloring since sealing is reversible via "Unseal this arc". */
+.arc-seal-confirm {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 2px 12px 0;
+}
+
+.arc-seal-confirm-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  color: var(--qj-ink-soft);
+}
+
+.arc-seal-confirm-button {
+  background: var(--qj-control-soft);
+  color: var(--qj-ink);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
+  padding: 4px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.arc-seal-confirm-button:hover {
+  background: var(--qj-control-soft-hover);
+}
+
+.arc-seal-confirm-button--primary {
+  background: var(--qj-control);
+  color: var(--qj-control-ink);
+  border-color: var(--qj-control-hover);
+}
+
+.arc-seal-confirm-button--primary:hover {
+  background: var(--qj-control-hover);
+}
+
+.arc-seal-confirm-button:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Sealed arc's collapsed single-line header. Same pill shape as .arc-expand-area
+   (reused wholesale -- this replaces it entirely rather than sitting alongside it),
+   plus a two-tone gradient (--qj-arc-pill-soft into --qj-card) so a sealed arc reads
+   visually distinct from an open one at a glance. */
+.arc-header--sealed .arc-expand-area {
+  flex: 1;
+  background: linear-gradient(90deg, var(--qj-arc-pill-soft) 0%, var(--qj-card) 100%);
+}
+
+.arc-seal-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--qj-done);
+  border: 2px solid var(--qj-done-ring);
+  color: var(--qj-check-ink);
+  font-family: var(--qj-glyph-font);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arc-sealed-label {
+  flex-shrink: 0;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--qj-ink-faint);
+}
+
+.arc-sealed-filler {
+  flex: 1;
+  min-width: 12px;
+  align-self: center;
+  height: 0;
+  border-bottom: 1px dotted var(--qj-hairline);
+}
+
+.arc-sealed-date {
+  flex-shrink: 0;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--qj-ink-soft);
+}
+
+.arc-sealed-body {
+  margin: 4px 0 0 12px;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid var(--qj-rule);
+}
+
+/* Shared underlined text-link style for "Unseal this arc" and "View all N in the
+   Archive". completed-preview-viewall carries the same rule set in
+   CompletedPreviewList.css; kept in step by hand since they live in different files
+   for different components. */
+.arc-unseal-link {
+  display: block;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  margin-top: 2px;
+  font-family: var(--qj-font-body);
+  font-size: 14px;
+  text-decoration: underline;
+  color: var(--qj-ink-heading);
+}
+
+.arc-unseal-link:hover {
+  color: var(--qj-ink-heading-strong);
+}
+
+.arc-unseal-link:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+}

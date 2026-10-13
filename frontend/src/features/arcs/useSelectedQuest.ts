@@ -1,9 +1,14 @@
 import { useCallback, useState } from "react";
 import type { Arc, Quest } from "../../types";
 
+// Searches both buckets a quest can live in for the active view -- `quests` (open) and
+// `recentCompleted` (completed today). Without the second, completing the selected
+// quest would make it unfindable the instant it moves out of `quests`, clearing the
+// selection and blanking the detail panel right when the user just acted on it.
 function findQuestById(arcs: Arc[], id: string): Quest | null {
   for (const arc of arcs) {
-    const match = arc.quests.find((q) => q.id === id);
+    const match =
+      arc.quests.find((q) => q.id === id) ?? arc.recentCompleted.find((q) => q.id === id);
     if (match) return match;
   }
   return null;
@@ -27,7 +32,9 @@ export function useSelectedQuest(arcs: Arc[]) {
       reconciled = null;
     } else if (
       // This must compare every user-visible field of Quest; add a clause here
-      // if Quest gains a new field, otherwise selection can go stale.
+      // if Quest gains a new field, otherwise selection can go stale. findQuestById
+      // above already covers both buckets a quest can be found in, so no extra check
+      // is needed here for that.
       found.title !== selectedQuest.title ||
       found.description !== selectedQuest.description ||
       found.arcId !== selectedQuest.arcId ||

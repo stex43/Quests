@@ -2,13 +2,18 @@ import { memo, useEffect, useId, useRef, useState } from "react";
 import { PencilIcon, TrashIcon } from "./icons";
 import type { Arc, Quest } from "../types";
 import { QuestRow } from "./QuestRow";
+import { SealedArcHeader } from "./SealedArcHeader";
+import { CompletedFooter } from "./CompletedFooter";
 import "./ArcCard.css";
 
 interface Props {
   arc: Arc;
   isExpanded: boolean;
-  showCompleted: boolean;
   selectedQuestId: string | null;
+  // Defaults to "tasks" so ArcCard's original callers (there were none before this
+  // feature besides ArcList, which now threads it explicitly) keep today's behaviour.
+  mode?: "tasks" | "archive";
+  isSealPrompted: boolean;
   onToggleExpand: (arcId: string) => void;
   onEdit: (arcId: string, title: string) => Promise<void>;
   onDelete: (arcId: string) => Promise<void>;
@@ -16,13 +21,18 @@ interface Props {
   onDeleteQuest: (questId: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
   onCreateQuest: (arcId: string, title: string) => Promise<void>;
+  onSeal: () => void;
+  onUnseal: () => void;
+  onDismissSealPrompt: () => void;
+  onViewInArchive?: (arcId: string) => void;
 }
 
 export const ArcCard = memo(function ArcCard({
   arc,
   isExpanded,
-  showCompleted,
   selectedQuestId,
+  mode = "tasks",
+  isSealPrompted,
   onToggleExpand,
   onEdit,
   onDelete,
@@ -30,6 +40,10 @@ export const ArcCard = memo(function ArcCard({
   onDeleteQuest,
   onToggleComplete,
   onCreateQuest,
+  onSeal,
+  onUnseal,
+  onDismissSealPrompt,
+  onViewInArchive,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -47,6 +61,7 @@ export const ArcCard = memo(function ArcCard({
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
   const restoreDeleteFocusRef = useRef(false);
   const deletePromptId = useId();
+  const sealPromptId = useId();
 
   useEffect(() => {
     if (isEditing) editInputRef.current?.focus();
@@ -128,6 +143,35 @@ export const ArcCard = memo(function ArcCard({
   }
 
   const questCount = arc.quests.length;
+
+  // A sealed arc renders a single-line collapsed header in place of the pill header
+  // entirely -- no rename/delete, no add-quest row, no seal-confirm strip apply to an
+  // already-sealed arc, regardless of mode.
+  if (arc.sealedAt) {
+    return (
+      <div className="arc-card" data-arc-id={arc.id}>
+        <SealedArcHeader
+          arcId={arc.id}
+          title={arc.title}
+          sealedAt={arc.sealedAt}
+          isExpanded={isExpanded}
+          onToggleExpand={() => {
+            onToggleExpand(arc.id);
+          }}
+          mode={mode}
+          quests={arc.quests}
+          recentCompleted={arc.recentCompleted}
+          completedCount={arc.completedCount}
+          selectedQuestId={selectedQuestId}
+          onSelectQuest={onSelectQuest}
+          onDeleteQuest={onDeleteQuest}
+          onToggleComplete={onToggleComplete}
+          onUnseal={onUnseal}
+          onViewInArchive={onViewInArchive}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="arc-card" data-arc-id={arc.id}>
@@ -242,11 +286,29 @@ export const ArcCard = memo(function ArcCard({
             </button>
           </>
         )}
+
+        {mode === "tasks" && isSealPrompted && (
+          <div className="arc-seal-confirm" role="group" aria-labelledby={sealPromptId}>
+            <span id={sealPromptId} className="arc-seal-confirm-text">
+              Seal this arc?
+            </span>
+            <button
+              type="button"
+              className="arc-seal-confirm-button arc-seal-confirm-button--primary"
+              onClick={onSeal}
+            >
+              Seal
+            </button>
+            <button type="button" className="arc-seal-confirm-button" onClick={onDismissSealPrompt}>
+              Not yet
+            </button>
+          </div>
+        )}
       </div>
 
       {isExpanded && (
         <div className="quest-list">
-          {(showCompleted ? arc.quests : arc.quests.filter((q) => !q.completed)).map((quest) => (
+          {arc.quests.map((quest) => (
             <QuestRow
               key={quest.id}
               quest={quest}
@@ -257,29 +319,42 @@ export const ArcCard = memo(function ArcCard({
             />
           ))}
 
-          <div className="new-quest-row">
-            <input
-              className="new-quest-input"
-              placeholder="New quest..."
-              value={newQuestTitle}
-              disabled={isCreatingQuest}
-              onChange={(e) => {
-                setNewQuestTitle(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleCreateQuest();
-              }}
-            />
-            <button
-              type="button"
-              aria-label="Add quest"
-              className="small-add-button"
-              onClick={() => void handleCreateQuest()}
-              disabled={isCreatingQuest}
-            >
-              +
-            </button>
-          </div>
+          {mode === "tasks" && (
+            <>
+              {arc.completedCount > 0 && (
+                <CompletedFooter
+                  arcId={arc.id}
+                  quests={arc.recentCompleted}
+                  completedCount={arc.completedCount}
+                  onViewInArchive={onViewInArchive}
+                />
+              )}
+
+              <div className="new-quest-row">
+                <input
+                  className="new-quest-input"
+                  placeholder="New quest..."
+                  value={newQuestTitle}
+                  disabled={isCreatingQuest}
+                  onChange={(e) => {
+                    setNewQuestTitle(e.target.value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleCreateQuest();
+                  }}
+                />
+                <button
+                  type="button"
+                  aria-label="Add quest"
+                  className="small-add-button"
+                  onClick={() => void handleCreateQuest()}
+                  disabled={isCreatingQuest}
+                >
+                  +
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

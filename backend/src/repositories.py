@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from src import models
@@ -33,6 +33,12 @@ class ArcRepository:
 
     def delete(self, arc: models.Arc) -> None:
         self.db.delete(arc)
+
+    def seal(self, arc: models.Arc) -> None:
+        arc.sealed_at = datetime.now(UTC)
+
+    def unseal(self, arc: models.Arc) -> None:
+        arc.sealed_at = None
 
 
 class QuestRepository:
@@ -79,3 +85,15 @@ class QuestRepository:
 
     def delete(self, quest: models.Quest) -> None:
         self.db.delete(quest)
+
+    def count_open(self, arc_id: uuid.UUID) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(models.Quest)
+            .where(models.Quest.arc_id == arc_id, models.Quest.completed.is_(False))
+        )
+        return self.db.scalar(stmt) or 0
+
+    def count_total(self, arc_id: uuid.UUID) -> int:
+        stmt = select(func.count()).select_from(models.Quest).where(models.Quest.arc_id == arc_id)
+        return self.db.scalar(stmt) or 0

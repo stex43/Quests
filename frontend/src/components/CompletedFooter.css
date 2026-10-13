@@ -1,0 +1,27 @@
+.completed-footer {
+  padding: 2px 0 0;
+}
+
+.completed-footer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  font-family: var(--qj-font-body);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--qj-ink-soft);
+}
+
+.completed-footer-toggle:hover {
+  color: var(--qj-ink);
+}
+
+.completed-footer-toggle:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -72,3 +72,17 @@ class ArcExtended(BaseModel):
     id: uuid.UUID
     title: str
     quests: list[Quest] = []
+    sealed_at: datetime | None = None
+    recent_completed: list[Quest] = []
+    completed_count: int = 0
+
+
+class ArcSealState(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    sealed_at: datetime | None
+
+
+class QuestCompleteResponse(Quest):
+    arc_fully_completed: bool

@@ -20,6 +20,11 @@ interface Props {
   onDeleteQuest: (questId: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
   onSelectQuest: (quest: Quest) => void;
+  isSealPrompted: (arcId: string) => boolean;
+  onSealArc: (arcId: string) => Promise<void>;
+  onUnsealArc: (arcId: string) => Promise<void>;
+  onDismissSealPrompt: (arcId: string) => void;
+  onViewInArchive: (arcId: string) => void;
 }
 
 export const ArcList = memo(function ArcList({
@@ -34,11 +39,15 @@ export const ArcList = memo(function ArcList({
   onDeleteQuest,
   onToggleComplete,
   onSelectQuest,
+  isSealPrompted,
+  onSealArc,
+  onUnsealArc,
+  onDismissSealPrompt,
+  onViewInArchive,
 }: Props) {
   // Groups default to expanded (mock opens all), so we track the *collapsed*
   // set instead of the expanded one.
   const [collapsedArcIds, setCollapsedArcIds] = useState<Set<string>>(() => new Set());
-  const [showCompleted, setShowCompleted] = useState(true);
   const [newArcTitle, setNewArcTitle] = useState("");
   const [isCreatingArc, setIsCreatingArc] = useState(false);
   const createArcInFlightRef = useRef(false);
@@ -118,27 +127,10 @@ export const ArcList = memo(function ArcList({
     }
   }
 
-  // When "show completed" is off, hide groups whose only quests are completed
-  // (they would render empty), mirroring the mock's visibleGroups filter. Arcs
-  // with no quests at all are kept so newly created / empty arcs stay reachable.
-  const visibleArcs = showCompleted
-    ? arcs
-    : arcs.filter((arc) => arc.quests.length === 0 || arc.quests.some((quest) => !quest.completed));
-
   return (
     <div className="arc-list-panel" ref={panelRef}>
       <div className="arc-list-header">
         <span className="arc-list-title">ONGOING DEEDS</span>
-        <label className="show-completed-toggle">
-          <input
-            type="checkbox"
-            checked={showCompleted}
-            onChange={(e) => {
-              setShowCompleted(e.target.checked);
-            }}
-          />
-          show completed
-        </label>
       </div>
 
       <div className="arc-list-body">
@@ -181,15 +173,16 @@ export const ArcList = memo(function ArcList({
           </button>
         </div>
 
-        {visibleArcs.map((arc) => {
+        {arcs.map((arc) => {
           const isArcSelected = arc.quests.some((q) => q.id === selectedQuestId);
           return (
             <ArcCard
               key={arc.id}
               arc={arc}
+              mode="tasks"
               isExpanded={!collapsedArcIds.has(arc.id)}
-              showCompleted={showCompleted}
               selectedQuestId={isArcSelected ? selectedQuestId : null}
+              isSealPrompted={isSealPrompted(arc.id)}
               onToggleExpand={toggleExpand}
               onEdit={onUpdateArc}
               onDelete={handleDeleteArc}
@@ -197,6 +190,12 @@ export const ArcList = memo(function ArcList({
               onDeleteQuest={onDeleteQuest}
               onToggleComplete={onToggleComplete}
               onCreateQuest={onCreateQuest}
+              onSeal={() => void onSealArc(arc.id)}
+              onUnseal={() => void onUnsealArc(arc.id)}
+              onDismissSealPrompt={() => {
+                onDismissSealPrompt(arc.id);
+              }}
+              onViewInArchive={onViewInArchive}
             />
           );
         })}
