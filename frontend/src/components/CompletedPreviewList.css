@@ -1,0 +1,58 @@
+.completed-preview-list {
+  padding: 2px 0 4px;
+}
+
+.completed-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  margin: 1px 0;
+}
+
+.completed-preview-accent {
+  width: 2px;
+  align-self: stretch;
+  flex: none;
+  background: var(--qj-rule);
+}
+
+.completed-preview-title {
+  flex: 1;
+  min-width: 0;
+  /* The left panel clips rather than scrolls, so a long unbroken title must break. */
+  overflow-wrap: anywhere;
+  font-family: var(--qj-font-body);
+  font-size: 15px;
+  color: var(--qj-done-ink);
+  text-decoration: line-through;
+}
+
+.completed-preview-date {
+  flex-shrink: 0;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--qj-ink-faint);
+}
+
+.completed-preview-viewall {
+  display: block;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 14px;
+  margin-top: 2px;
+  font-family: var(--qj-font-body);
+  font-size: 14px;
+  text-decoration: underline;
+  color: var(--qj-ink-heading);
+}
+
+.completed-preview-viewall:hover {
+  color: var(--qj-ink-heading-strong);
+}
+
+.completed-preview-viewall:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+}

@@ -46,7 +46,7 @@ def update_quest(
         raise ConflictError("Update failed due to a conflict.")
 
 
-@router.post("/{quest_id}/complete", status_code=status.HTTP_200_OK, response_model=schemas.Quest)
+@router.post("/{quest_id}/complete", status_code=status.HTTP_200_OK, response_model=schemas.QuestCompleteResponse)
 def complete_quest(
     quest_id: uuid.UUID,
     db: DbSession,
@@ -62,17 +62,23 @@ def complete_quest(
     quest = repo.complete(db_quest, utc_offset_minutes=completion.utc_offset_minutes if completion else None)
     db.commit()
     db.refresh(quest)
-    return quest
+    arc_fully_completed = repo.count_open(quest.arc_id) == 0
+    return schemas.QuestCompleteResponse(
+        **schemas.Quest.model_validate(quest).model_dump(), arc_fully_completed=arc_fully_completed
+    )
 
 
 @router.post("/{quest_id}/uncomplete", status_code=status.HTTP_200_OK, response_model=schemas.Quest)
-def uncomplete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo):
+def uncomplete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo, arc_repo: ArcRepo):
     # Idempotent by design: calling this on an already-incomplete quest is a no-op and
     # still returns the current quest.
     db_quest = repo.get(quest_id)
     if not db_quest:
         raise NotFoundError("Quest", quest_id)
     quest = repo.uncomplete(db_quest)
+    arc = arc_repo.get(quest.arc_id)
+    if arc is not None and arc.sealed_at is not None:
+        arc_repo.unseal(arc)
     db.commit()
     db.refresh(quest)
     return quest

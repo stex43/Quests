@@ -15,6 +15,8 @@ class Arc(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    # Set when the user explicitly seals the arc; cleared on unseal. Never inferred.
+    sealed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
     # Oldest first, matching the client appending new quests; id breaks ties between
     # rows that share the migration's backfill timestamp.
     quests: Mapped[list["Quest"]] = relationship(
