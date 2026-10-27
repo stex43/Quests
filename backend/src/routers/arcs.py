@@ -1,11 +1,10 @@
 import uuid
-from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import IntegrityError
 
-from src import response_building, schemas
+from src import recurrence, response_building, schemas
 from src.dependencies import ArcRepo, DbSession, QuestRepo
 from src.exceptions import ConflictError, DomainValidationError, NotFoundError
 
@@ -27,7 +26,7 @@ def get_arcs(
     view: Literal["active", "archive"] = "active",
     utc_offset_minutes: Annotated[int, Query(ge=-840, le=840)] | None = None,
 ):
-    today = (datetime.now(UTC) + timedelta(minutes=utc_offset_minutes or 0)).date()
+    today = recurrence.local_today(utc_offset_minutes)
     responses = [response_building.build_arc_response(arc, view, today) for arc in repo.get_all()]
     if view == "archive":
         responses = [r for r in responses if r.quests]
@@ -56,7 +55,13 @@ def create_quest(
         raise NotFoundError("Arc", arc_id)
     if db_arc.sealed_at is not None:
         arc_repo.unseal(db_arc)
-    db_quest = quest_repo.create(title=quest.title, description=quest.description, arc_id=arc_id)
+    db_quest = quest_repo.create(
+        title=quest.title,
+        description=quest.description,
+        arc_id=arc_id,
+        rule=quest.recurrence,
+        today=recurrence.local_today(quest.utc_offset_minutes),
+    )
     try:
         db.commit()
     except IntegrityError:

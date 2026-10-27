@@ -104,6 +104,9 @@ def make_quest(db_session) -> Callable[..., models.Quest]:
         completed: bool = False,
         completed_on: date | None = None,
         created_at: datetime | None = None,
+        due_on: date | None = None,
+        series_id: uuid.UUID | None = None,
+        recurrence: dict | None = None,
     ) -> models.Quest:
         quest = models.Quest(
             arc_id=arc_id,
@@ -111,6 +114,9 @@ def make_quest(db_session) -> Callable[..., models.Quest]:
             description=description,
             completed=completed,
             completed_on=completed_on,
+            due_on=due_on,
+            series_id=series_id,
+            recurrence=recurrence,
         )
         if created_at is not None:
             quest.created_at = created_at

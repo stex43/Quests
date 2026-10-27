@@ -81,7 +81,7 @@ def test_update_conflict_on_arc_move(client, db_session, make_arc, make_quest, m
 
 
 def test_complete_quest_no_offset_uses_utc_day(client, make_arc, make_quest, monkeypatch):
-    import src.repositories as repositories_module
+    import src.recurrence as recurrence_module
 
     frozen_now = datetime(2026, 5, 10, 12, 0, tzinfo=UTC)
 
@@ -90,7 +90,7 @@ def test_complete_quest_no_offset_uses_utc_day(client, make_arc, make_quest, mon
         def now(cls, tz=None):
             return frozen_now
 
-    monkeypatch.setattr(repositories_module, "datetime", _FrozenDatetime)
+    monkeypatch.setattr(recurrence_module, "datetime", _FrozenDatetime)
 
     arc = make_arc()
     quest = make_quest(arc.id)
@@ -102,7 +102,7 @@ def test_complete_quest_no_offset_uses_utc_day(client, make_arc, make_quest, mon
 
 
 def test_complete_quest_with_offset_derives_local_day(client, make_arc, make_quest, monkeypatch):
-    import src.repositories as repositories_module
+    import src.recurrence as recurrence_module
 
     frozen_now = datetime(2026, 5, 10, 23, 30, tzinfo=UTC)
 
@@ -111,7 +111,7 @@ def test_complete_quest_with_offset_derives_local_day(client, make_arc, make_que
         def now(cls, tz=None):
             return frozen_now
 
-    monkeypatch.setattr(repositories_module, "datetime", _FrozenDatetime)
+    monkeypatch.setattr(recurrence_module, "datetime", _FrozenDatetime)
 
     arc = make_arc()
     quest = make_quest(arc.id)
