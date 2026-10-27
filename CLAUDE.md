@@ -11,7 +11,8 @@ pip install -r requirements.txt   # install deps
 uvicorn src.main:app --reload     # run dev server (requires DB running)
 alembic upgrade head              # run migrations
 alembic revision --autogenerate -m "description"   # generate migration after model changes
-ruff check src/ && ruff format src/   # lint (pinned in requirements-dev.txt, matches CI)
+pytest                            # run tests (needs Docker running for testcontainers; deps in requirements-dev.txt)
+ruff check src/ tests/ && ruff format src/ tests/   # lint (pinned in requirements-dev.txt, matches CI)
 ```
 
 ## Frontend Commands
@@ -44,7 +45,7 @@ Backend reads env vars from `.env` (or `.env.docker` for Docker; copy from `back
 - `models.py` / `database.py` — `Arc`/`Quest` ORM models (`Quest.arc` is `lazy="raise"`); engine, `SessionLocal`, `get_db` (rolls back on exception)
 - `settings.py` — `pydantic-settings` config, incl. CORS/host regex validation at startup
 - `exceptions.py` / `exception_handlers.py` — `DomainError` base (`status_code`/`error` attrs) with `NotFoundError`/`ConflictError`/`DomainValidationError` subclasses (routers raise these, never `HTTPException`); one handler maps any `DomainError` to `ErrorResponse`, another turns `RequestValidationError` into 400 — no generic `Exception` handler (`UnhandledErrorMiddleware` covers 500s)
-- No backend tests yet. When added: construct `TestClient(app, base_url="http://localhost")` (or set `ALLOWED_HOST_REGEX=` before importing `src.main`) — the guard 400s the default `testserver` host
+- `backend/tests/`: real ephemeral Postgres via testcontainers, started at `conftest.py` module level before any `src` import (env vars must be set before that first import); per-test isolation via a SQLAlchemy savepoint/external-transaction pattern (`db_session` fixture) so handler-level `db.commit()` calls don't leak between tests; `client` fixture builds `TestClient(app, base_url="http://localhost")` (the guard 400s the default `testserver` host) with `get_db` overridden to the test's `db_session`
 
 ### Data Model
 **Arc**: title; has many Quests (cascade delete). **Quest**: belongs to an Arc; title, description, `completed` flag, nullable `completed_on` date (completer's local calendar day, resolved server-side from a client UTC offset). Both have server-set `created_at` fixing list order: arcs newest first, quests oldest first, `id` tiebreaker.

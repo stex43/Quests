@@ -11,3 +11,7 @@ target-version = "py312"
 [tool.ruff.format]
 indent-style = "space"
 quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
