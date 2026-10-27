@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -73,13 +73,19 @@ class QuestRepository:
 
     def set_recurrence(self, quest: models.Quest, rule: schemas.RecurrenceRule, today: date) -> None:
         # Callers must only pass open quests. Changing an existing rule keeps the series (and
-        # its completed history) and re-anchors it from today, so the open instance's due_on is
-        # recomputed from today exactly like a brand-new rule's first occurrence.
+        # its completed history) and re-anchors it from the first day not yet covered by that
+        # history: today, unless an instance done today or early (due later) already covers it,
+        # so a rule change never re-schedules an occurrence that is already done.
+        start = today
         if quest.series_id is None:
             quest.series_id = uuid.uuid4()
-        stored = recurrence.to_stored(rule, today)
+        else:
+            done_through = self._latest_done_day(quest.series_id)
+            if done_through is not None and done_through >= today:
+                start = done_through + timedelta(days=1)
+        stored = recurrence.to_stored(rule, start)
         quest.recurrence = recurrence.dump_stored(stored)
-        quest.due_on = recurrence.first_on_or_after(stored, today)
+        quest.due_on = recurrence.first_on_or_after(stored, start)
 
     def clear_recurrence(self, quest: models.Quest) -> None:
         # Stop repeating: the quest becomes a plain, always-visible quest. Completed instances
@@ -123,24 +129,55 @@ class QuestRepository:
     def uncomplete(self, quest: models.Quest) -> uuid.UUID | None:
         """Mark the quest open; returns the id of the series instance deleted to make room, if any."""
         removed_id = None
-        if quest.series_id is not None:
-            # Undo semantics: the instance spawned in its place goes away, so this one becomes
-            # the series' open instance again. The DELETE is flushed before the flag flips for
-            # the same index-ordering reason as in complete().
-            stmt = select(models.Quest).where(
+        if quest.completed and quest.series_id is not None:
+            # Undo semantics only for the series' latest completed instance while the series is
+            # still live: the instance spawned in its place goes away (with any edits made to
+            # it), so this one becomes the series' open instance again. An older instance, or
+            # one whose series was stopped or whose open instance was deleted, reopens as a
+            # plain quest instead, so it neither deletes the live instance nor revives a series.
+            open_stmt = select(models.Quest).where(
                 models.Quest.series_id == quest.series_id,
                 models.Quest.completed.is_(False),
                 models.Quest.id != quest.id,
             )
-            open_instance = self.db.scalars(stmt).first()
-            if open_instance is not None:
+            open_instance = self.db.scalars(open_stmt).first()
+            if open_instance is not None and self._latest_completed_id(quest.series_id) == quest.id:
                 removed_id = open_instance.id
                 self.db.delete(open_instance)
+                # The DELETE is flushed before the flag flips for the same index-ordering
+                # reason as in complete().
                 self.db.flush()
-        # Cleared unconditionally: also heals rows whose flag and date disagree. due_on is kept.
+            else:
+                self.clear_recurrence(quest)
+        # Cleared unconditionally: also heals rows whose flag and date disagree. due_on is kept
+        # on the undo path (and cleared with the rest of the rule on the plain one).
         quest.completed = False
         quest.completed_on = None
         return removed_id
+
+    def _latest_completed_id(self, series_id: uuid.UUID) -> uuid.UUID | None:
+        # The series' most recent occurrence: by due day, then completion day (NULLs sort as
+        # earliest), with created_at and id breaking ties.
+        stmt = (
+            select(models.Quest.id)
+            .where(models.Quest.series_id == series_id, models.Quest.completed.is_(True))
+            .order_by(
+                models.Quest.due_on.desc().nulls_last(),
+                models.Quest.completed_on.desc().nulls_last(),
+                models.Quest.created_at.desc(),
+                models.Quest.id.desc(),
+            )
+            .limit(1)
+        )
+        return self.db.scalar(stmt)
+
+    def _latest_done_day(self, series_id: uuid.UUID) -> date | None:
+        # The last day the series' completed history covers: an instance done early covers its
+        # due day, one done late covers its completion day. GREATEST skips a NULL operand.
+        stmt = select(func.max(func.greatest(models.Quest.due_on, models.Quest.completed_on))).where(
+            models.Quest.series_id == series_id, models.Quest.completed.is_(True)
+        )
+        return self.db.scalar(stmt)
 
     def delete(self, quest: models.Quest) -> None:
         self.db.delete(quest)

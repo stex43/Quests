@@ -349,6 +349,60 @@ def test_uncomplete_open_series_instance_removes_nothing(client, clock, db_sessi
     assert [str(q.id) for q in _open_in_series(db_session, created["series_id"])] == [created["id"]]
 
 
+def _assert_plain(body: dict) -> None:
+    assert body["completed"] is False
+    assert body["completed_on"] is None
+    assert body["recurrence"] is None
+    assert body["series_id"] is None
+    assert body["due_on"] is None
+    assert body["removed_instance_id"] is None
+
+
+def test_uncomplete_older_instance_reopens_plain_and_keeps_open_instance(client, clock, db_session, make_arc):
+    arc = make_arc()
+    first = _create(client, arc.id, DAILY).json()
+    second = client.post(f"/quests/{first['id']}/complete").json()["next_instance"]
+    clock.today = date(2026, 10, 28)
+    third = client.post(f"/quests/{second['id']}/complete").json()["next_instance"]
+
+    body = client.post(f"/quests/{first['id']}/uncomplete").json()
+    _assert_plain(body)
+    # The live open instance (and the newer completed one) are untouched.
+    assert [str(q.id) for q in _open_in_series(db_session, first["series_id"])] == [third["id"]]
+    assert db_session.get(models.Quest, uuid.UUID(second["id"])).completed is True
+
+    listing = _active_arc(client, arc.id)
+    assert _ids(listing["quests"]) == [first["id"]]
+    assert _ids(listing["upcoming"]) == [third["id"]]
+
+
+def test_uncomplete_after_series_stopped_reopens_plain(client, clock, db_session, make_arc):
+    arc = make_arc()
+    created = _create(client, arc.id, DAILY).json()
+    nxt = client.post(f"/quests/{created['id']}/complete").json()["next_instance"]
+    client.delete(f"/quests/{nxt['id']}/recurrence")
+
+    body = client.post(f"/quests/{created['id']}/uncomplete").json()
+    _assert_plain(body)
+    # The stopped quest survives as a plain quest and the old series does not come back.
+    assert db_session.get(models.Quest, uuid.UUID(nxt["id"])).series_id is None
+    assert _open_in_series(db_session, created["series_id"]) == []
+    listing = _active_arc(client, arc.id)
+    assert set(_ids(listing["quests"])) == {created["id"], nxt["id"]}
+    assert listing["upcoming"] == []
+
+
+def test_uncomplete_latest_after_open_instance_deleted_reopens_plain(client, clock, db_session, make_arc):
+    arc = make_arc()
+    created = _create(client, arc.id, DAILY).json()
+    nxt = client.post(f"/quests/{created['id']}/complete").json()["next_instance"]
+    client.delete(f"/quests/{nxt['id']}")
+
+    body = client.post(f"/quests/{created['id']}/uncomplete").json()
+    _assert_plain(body)
+    assert _open_in_series(db_session, created["series_id"]) == []
+
+
 def test_uncomplete_plain_quest_removes_nothing(client, make_arc, make_quest):
     arc = make_arc()
     quest = make_quest(arc.id, completed=True, completed_on=date(2026, 10, 1))
@@ -386,6 +440,47 @@ def test_put_recurrence_changes_rule_keeps_series_and_reanchors(client, clock, d
     assert body["due_on"] == "2026-11-03"
     stored = db_session.get(models.Quest, uuid.UUID(created["id"])).recurrence
     assert stored["anchor_on"] == "2026-11-03"
+
+
+def test_put_recurrence_skips_today_when_already_done(client, clock, make_arc):
+    arc = make_arc()
+    created = _create(client, arc.id, DAILY).json()
+    nxt = client.post(f"/quests/{created['id']}/complete").json()["next_instance"]
+    # Today (a Tuesday) is done, so "weekly on Tue" starts next week, not today.
+    body = client.put(f"/quests/{nxt['id']}/recurrence", json={"recurrence": _weekly([TUE])}).json()
+    assert body["due_on"] == "2026-11-03"
+    assert body["series_id"] == created["series_id"]
+
+
+def test_put_recurrence_adding_weekday_keeps_next_pending_one(client, clock, make_arc):
+    clock.today = date(2026, 11, 2)
+    arc = make_arc()
+    created = _create(client, arc.id, _weekly([MON, WED])).json()
+    assert created["due_on"] == "2026-11-02"
+    wed = client.post(f"/quests/{created['id']}/complete").json()["next_instance"]
+    assert wed["due_on"] == "2026-11-04"
+    # Still Monday: adding Friday must not pull Monday's done occurrence back in.
+    body = client.put(f"/quests/{wed['id']}/recurrence", json={"recurrence": _weekly([MON, WED, FRI])}).json()
+    assert body["due_on"] == "2026-11-04"
+
+
+def test_put_recurrence_after_early_completion_schedules_past_its_due_day(client, clock, make_arc):
+    arc = make_arc()
+    created = _create(client, arc.id, _weekly([WED])).json()
+    assert created["due_on"] == "2026-10-28"
+    # Wednesday's occurrence is done early, on Tuesday, so today and tomorrow are both covered.
+    nxt = client.post(f"/quests/{created['id']}/complete").json()["next_instance"]
+    body = client.put(f"/quests/{nxt['id']}/recurrence", json={"recurrence": DAILY}).json()
+    assert body["due_on"] == "2026-10-29"
+
+
+def test_put_recurrence_with_only_past_history_starts_today(client, clock, make_arc):
+    arc = make_arc()
+    created = _create(client, arc.id, DAILY).json()
+    nxt = client.post(f"/quests/{created['id']}/complete").json()["next_instance"]
+    clock.today = date(2026, 10, 30)
+    body = client.put(f"/quests/{nxt['id']}/recurrence", json={"recurrence": _weekly([FRI])}).json()
+    assert body["due_on"] == "2026-10-30"
 
 
 def test_put_recurrence_on_completed_quest_400(client, clock, make_arc, make_quest):

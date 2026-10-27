@@ -107,7 +107,8 @@ def uncomplete_quest(quest_id: uuid.UUID, db: DbSession, repo: QuestRepo, arc_re
 def set_quest_recurrence(
     quest_id: uuid.UUID, recurrence_update: schemas.QuestRecurrenceUpdate, db: DbSession, repo: QuestRepo
 ):
-    # Sets or replaces the rule; the quest's due_on is recomputed from the caller's today.
+    # Sets or replaces the rule; the quest's due_on is recomputed from the caller's today, or
+    # from the day after the series' completed history if that already covers today.
     db_quest = repo.get(quest_id)
     if not db_quest:
         raise NotFoundError("Quest", quest_id)
