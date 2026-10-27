@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
-import { TrashIcon } from "./icons";
+import { RepeatIcon, TrashIcon } from "./icons";
+import { formatDay, localCalendarDay } from "../dateFormat";
 import type { Quest } from "../types";
 import "./QuestRow.css";
 
@@ -48,6 +49,13 @@ export const QuestRow = memo(function QuestRow({
     }
   }
 
+  // Only an open instance can be overdue; once done, its due day is just history. Upcoming
+  // instances never reach a QuestRow (they live in UpcomingFooter), so an open dated
+  // quest here is due today or overdue.
+  const isOverdue =
+    !quest.completed && quest.dueOn !== null && quest.dueOn < localCalendarDay(new Date());
+  const dueLabel = isOverdue ? formatDay(quest.dueOn) : null;
+
   return (
     <div className="quest-row" data-selected={isSelected}>
       <span className="quest-accent" aria-hidden="true" />
@@ -61,6 +69,17 @@ export const QuestRow = memo(function QuestRow({
         <span className="quest-title" data-completed={quest.completed}>
           {quest.title}
         </span>
+        {/* Inside the select button so both markers are part of its accessible name --
+            the icon is aria-hidden, so the visually-hidden word carries it. */}
+        {quest.recurrence && (
+          <span className="quest-repeat-marker" title="Repeats">
+            <RepeatIcon />
+            <span className="visually-hidden">Repeats</span>
+          </span>
+        )}
+        {isOverdue && (
+          <span className="quest-overdue">Overdue{dueLabel ? ` · due ${dueLabel}` : ""}</span>
+        )}
       </button>
       <button
         type="button"

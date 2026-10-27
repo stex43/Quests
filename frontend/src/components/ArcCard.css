@@ -176,6 +176,7 @@
 
 .new-quest-input {
   flex: 1;
+  min-width: 0; /* shares the row with two buttons; .arc-list-panel clips overflow */
   background: var(--qj-field);
   border: 1px solid var(--qj-field-border);
   border-radius: var(--qj-radius);
@@ -217,6 +218,48 @@
 .small-add-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Same footprint as .small-add-button beside it. data-active (a rule is chosen) takes the
+   pressed-segment colours the picker itself uses, so a set repeat stays visible with the
+   picker closed. */
+.new-quest-repeat-toggle {
+  background: var(--qj-control-soft);
+  color: var(--qj-ink-soft);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.new-quest-repeat-toggle:hover {
+  background: var(--qj-control-soft-hover);
+  color: var(--qj-ink);
+}
+
+.new-quest-repeat-toggle[data-active="true"] {
+  background: var(--qj-control);
+  color: var(--qj-control-ink);
+  border-color: var(--qj-control-hover);
+}
+
+.new-quest-repeat-toggle[data-active="true"]:hover {
+  background: var(--qj-control-hover);
+}
+
+.new-quest-repeat-toggle:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+}
+
+.new-quest-recurrence {
+  padding: 2px 6px 6px;
 }
 
 /* Non-destructive counterpart to .arc-delete-confirm*: same layout (flex-wrap,

@@ -33,8 +33,13 @@
   background: var(--qj-selected-ink-soft);
 }
 
+/* Wraps so the overdue line can take a row of its own under the title (flex-basis:
+   100% below) instead of squeezing it: the left panel clips rather than scrolls. */
 .quest-select-area {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
   flex: 1;
   min-width: 0;
   background: none;
@@ -65,6 +70,28 @@
 .quest-title[data-completed="true"] {
   color: var(--qj-done-ink);
   text-decoration: line-through;
+}
+
+.quest-repeat-marker {
+  display: flex;
+  flex: none;
+  color: var(--qj-ink-soft);
+}
+
+.quest-overdue {
+  flex-basis: 100%;
+  margin-top: 2px;
+  font-family: var(--qj-font-body);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--qj-overdue);
+}
+
+/* Over the selected purple both markers take the row's light icon ink; the overdue
+   umber would sit near 1.5:1 there. */
+.quest-row[data-selected="true"] .quest-repeat-marker,
+.quest-row[data-selected="true"] .quest-overdue {
+  color: var(--qj-selected-icon);
 }
 
 .quest-row[data-selected="true"] .quest-title,

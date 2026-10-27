@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import type { Arc, Quest } from "../types";
+import type { Arc, Quest, Recurrence } from "../types";
 import { ArcCard } from "./ArcCard";
 import "./ArcList.css";
 
@@ -16,7 +16,7 @@ interface Props {
   onCreateArc: (title: string) => Promise<void>;
   onUpdateArc: (arcId: string, title: string) => Promise<void>;
   onDeleteArc: (arcId: string) => Promise<void>;
-  onCreateQuest: (arcId: string, title: string) => Promise<void>;
+  onCreateQuest: (arcId: string, title: string, recurrence?: Recurrence | null) => Promise<void>;
   onDeleteQuest: (questId: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
   onSelectQuest: (quest: Quest) => void;
@@ -174,7 +174,10 @@ export const ArcList = memo(function ArcList({
         </div>
 
         {arcs.map((arc) => {
-          const isArcSelected = arc.quests.some((q) => q.id === selectedQuestId);
+          // Upcoming rows are selectable too (UpcomingFooter), so they count here.
+          const isArcSelected =
+            arc.quests.some((q) => q.id === selectedQuestId) ||
+            arc.upcoming.some((q) => q.id === selectedQuestId);
           return (
             <ArcCard
               key={arc.id}

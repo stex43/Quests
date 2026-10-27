@@ -1,0 +1,96 @@
+/* Every row wraps: the picker sits in the left panel's add-quest form, and
+   .arc-list-panel clips rather than scrolls, so nothing here may push past its edge. */
+.recurrence-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.recurrence-picker-modes,
+.recurrence-picker-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.recurrence-picker-button {
+  background: var(--qj-control-soft);
+  color: var(--qj-ink);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
+  padding: 4px 10px;
+  font-family: var(--qj-font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.recurrence-picker-button:hover {
+  background: var(--qj-control-soft-hover);
+}
+
+.recurrence-picker-button[aria-pressed="true"] {
+  background: var(--qj-control);
+  color: var(--qj-control-ink);
+  border-color: var(--qj-control-hover);
+}
+
+.recurrence-picker-button[aria-pressed="true"]:hover {
+  background: var(--qj-control-hover);
+}
+
+/* The last chosen weekday: still focusable (its tooltip explains why it won't
+   release), so it keeps full colour and signals the block through the cursor. */
+.recurrence-picker-button[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.recurrence-picker-button:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+}
+
+.recurrence-picker-day {
+  min-width: 2.75em;
+  padding: 4px 6px;
+}
+
+.recurrence-picker-interval {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--qj-font-body);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--qj-ink-soft);
+}
+
+.recurrence-picker-interval-input {
+  width: 4em;
+  box-sizing: border-box;
+  background: var(--qj-field);
+  border: 1px solid var(--qj-field-border);
+  border-radius: var(--qj-radius);
+  padding: 4px 6px;
+  font-family: var(--qj-font-body);
+  font-style: normal;
+  font-size: 14px;
+  color: var(--qj-ink);
+}
+
+/* No ring: the caret is the focus indicator, and the full rationale lives with the
+   token definitions in index.css. The :not() keeps the red invalid ring winning on a
+   focused field, for the same reason .arc-title-input's rule spells out. */
+.recurrence-picker-interval-input:focus-visible:not([aria-invalid="true"]) {
+  outline: none;
+}
+
+.recurrence-picker-interval-input[aria-invalid="true"] {
+  outline: 2px solid var(--qj-error);
+}
+
+.recurrence-picker-interval-input[aria-invalid="true"]:focus-visible {
+  outline: 2px solid var(--qj-error);
+  outline-offset: 2px;
+}
