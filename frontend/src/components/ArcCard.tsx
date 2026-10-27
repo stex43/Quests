@@ -1,9 +1,12 @@
-import { memo, useEffect, useId, useRef, useState } from "react";
-import { PencilIcon, TrashIcon } from "./icons";
-import type { Arc, Quest } from "../types";
+import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
+import { PencilIcon, RepeatIcon, TrashIcon } from "./icons";
+import type { Arc, Quest, Recurrence } from "../types";
+import { describeRecurrence } from "../dateFormat";
 import { QuestRow } from "./QuestRow";
 import { SealedArcHeader } from "./SealedArcHeader";
 import { CompletedFooter } from "./CompletedFooter";
+import { UpcomingFooter } from "./UpcomingFooter";
+import { RecurrencePicker } from "./RecurrencePicker";
 import "./ArcCard.css";
 
 interface Props {
@@ -20,7 +23,7 @@ interface Props {
   onSelectQuest: (quest: Quest) => void;
   onDeleteQuest: (questId: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
-  onCreateQuest: (arcId: string, title: string) => Promise<void>;
+  onCreateQuest: (arcId: string, title: string, recurrence?: Recurrence | null) => Promise<void>;
   onSeal: () => void;
   onUnseal: () => void;
   onDismissSealPrompt: () => void;
@@ -53,6 +56,15 @@ export const ArcCard = memo(function ArcCard({
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isCreatingQuest, setIsCreatingQuest] = useState(false);
   const [newQuestTitle, setNewQuestTitle] = useState("");
+  // The add-quest form's repeat draft. The picker stays hidden until the repeat toggle
+  // opens it, so the form is a single line by default; closing it keeps the chosen rule
+  // (the toggle shows it is set) rather than silently discarding it.
+  const [newQuestRecurrence, setNewQuestRecurrence] = useState<Recurrence | null>(null);
+  const [isRepeatPickerOpen, setIsRepeatPickerOpen] = useState(false);
+  // Mirrors newQuestRecurrence for handleCreateQuest, whose closure only sees the draft
+  // as it was when the create started -- after the await it must compare against the
+  // draft as it is now.
+  const newQuestRecurrenceRef = useRef<Recurrence | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
   const commitInFlightRef = useRef(false);
@@ -62,6 +74,7 @@ export const ArcCard = memo(function ArcCard({
   const restoreDeleteFocusRef = useRef(false);
   const deletePromptId = useId();
   const sealPromptId = useId();
+  const repeatPickerId = useId();
 
   useEffect(() => {
     if (isEditing) editInputRef.current?.focus();
@@ -125,15 +138,31 @@ export const ArcCard = memo(function ArcCard({
     }
   }
 
+  // Stable, so the memoized picker doesn't re-render with every ArcCard render.
+  const changeNewQuestRecurrence = useCallback((rule: Recurrence | null) => {
+    newQuestRecurrenceRef.current = rule;
+    setNewQuestRecurrence(rule);
+  }, []);
+
   async function handleCreateQuest() {
     if (createQuestInFlightRef.current) return;
     const title = newQuestTitle.trim();
     if (!title) return;
     createQuestInFlightRef.current = true;
     setIsCreatingQuest(true);
+    // The rule this create sends. The picker stays live while the request is in flight,
+    // and every change makes a new object, so identity tells whether the draft moved on.
+    const recurrence = newQuestRecurrence;
     try {
-      await onCreateQuest(arc.id, title);
+      await onCreateQuest(arc.id, title, recurrence);
       setNewQuestTitle("");
+      // Back to a plain, one-line form: a repeat is a per-quest choice, not a mode. Only
+      // when the draft is still the rule just used, though: a change made mid-flight is
+      // meant for the next quest and would otherwise be silently dropped.
+      if (newQuestRecurrenceRef.current === recurrence) {
+        changeNewQuestRecurrence(null);
+        setIsRepeatPickerOpen(false);
+      }
     } catch {
       // error displayed by parent via mutationError
     } finally {
@@ -142,7 +171,11 @@ export const ArcCard = memo(function ArcCard({
     }
   }
 
-  const questCount = arc.quests.length;
+  // Upcoming instances are open quests too, and the delete cascades to them as well.
+  const questCount = arc.quests.length + arc.upcoming.length;
+  const repeatToggleLabel = newQuestRecurrence
+    ? `Repeat options (${describeRecurrence(newQuestRecurrence)})`
+    : "Repeat options";
 
   // A sealed arc renders a single-line collapsed header in place of the pill header
   // entirely -- no rename/delete, no add-quest row, no seal-confirm strip apply to an
@@ -321,6 +354,14 @@ export const ArcCard = memo(function ArcCard({
 
           {mode === "tasks" && (
             <>
+              {arc.upcoming.length > 0 && (
+                <UpcomingFooter
+                  quests={arc.upcoming}
+                  selectedQuestId={selectedQuestId}
+                  onSelectQuest={onSelectQuest}
+                />
+              )}
+
               {arc.completedCount > 0 && (
                 <CompletedFooter
                   arcId={arc.id}
@@ -343,6 +384,23 @@ export const ArcCard = memo(function ArcCard({
                     if (e.key === "Enter") void handleCreateQuest();
                   }}
                 />
+                {/* Not disabled while a create is in flight, unlike the add button: the
+                    picker it reveals is only a draft, and disabling a focused button
+                    would blur it to <body>. */}
+                <button
+                  type="button"
+                  className="new-quest-repeat-toggle"
+                  data-active={newQuestRecurrence !== null}
+                  aria-expanded={isRepeatPickerOpen}
+                  aria-controls={repeatPickerId}
+                  aria-label={repeatToggleLabel}
+                  title={repeatToggleLabel}
+                  onClick={() => {
+                    setIsRepeatPickerOpen((prev) => !prev);
+                  }}
+                >
+                  <RepeatIcon />
+                </button>
                 <button
                   type="button"
                   aria-label="Add quest"
@@ -353,6 +411,15 @@ export const ArcCard = memo(function ArcCard({
                   +
                 </button>
               </div>
+              {isRepeatPickerOpen && (
+                <div className="new-quest-recurrence" id={repeatPickerId}>
+                  <RecurrencePicker
+                    value={newQuestRecurrence}
+                    onChange={changeNewQuestRecurrence}
+                    label="Repeat new quest"
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

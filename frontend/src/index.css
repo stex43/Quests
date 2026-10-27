@@ -53,6 +53,10 @@
   --qj-done-ring: #3d5c2c;
   --qj-done-ink: #3a5028;
   --qj-active-ring: #6b6455;
+  /* A repeating quest's instance past its due day. Burnt umber rather than --qj-error or
+     --qj-crimson, so it reads as a reminder and not as a failure or a destructive action;
+     ~5.2:1 over the left panel, enough for the 13px text it colours. */
+  --qj-overdue: #8a3f14;
 
   /* Glyphs */
   --qj-stamp-glyph: #f4f1e6;
@@ -86,10 +90,10 @@
      document for WCAG 2.4.7 accepts. That reasoning is specific to editable text
      fields. A button has no caret, so buttons, icon buttons and the wax stamp keep
      --qj-focus-ring, and the controls inside a selected quest row keep
-     --qj-focus-ring-inverse -- do not copy outline: none onto them. The five fields
+     --qj-focus-ring-inverse -- do not copy outline: none onto them. The six fields
      that do suppress it are .quest-detail-title-input,
-     .quest-detail-description-input, .arc-title-input, .new-quest-input and
-     .arc-list-input; each one points back here. */
+     .quest-detail-description-input, .arc-title-input, .new-quest-input,
+     .arc-list-input and .recurrence-picker-interval-input; each one points back here. */
   --qj-focus-ring: 2px solid var(--qj-ink-heading);
   --qj-focus-ring-inverse: 2px solid var(--qj-selected-icon);
 

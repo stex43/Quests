@@ -232,13 +232,22 @@
   color: var(--qj-ink-faint);
 }
 
-.quest-detail-subtasks-label {
+/* Heads each section below the description (REPEAT, SUBTASKS). */
+.quest-detail-section-label {
   font-family: var(--qj-font-heading);
   font-weight: 600;
   font-size: 14px;
   color: var(--qj-ink-heading);
   letter-spacing: 1.5px;
   margin-bottom: 14px;
+}
+
+.quest-detail-overdue {
+  color: var(--qj-overdue);
+}
+
+.quest-detail-repeat {
+  margin-bottom: 30px;
 }
 
 .quest-detail-subtask-card {

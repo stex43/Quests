@@ -44,6 +44,7 @@ export default function App() {
     update: updateQuest,
     remove: removeQuest,
     toggleComplete,
+    setRecurrence: setQuestRecurrence,
   } = useQuests(setArcs, runMutation, onArcOpenStateChange);
   const { selectedQuest, select } = useSelectedQuest(arcs);
 
@@ -147,6 +148,7 @@ export default function App() {
           arcTitle={selectedArcTitle}
           onUpdate={updateQuest}
           onToggleComplete={toggleComplete}
+          onSetRecurrence={setQuestRecurrence}
         />
       </div>
     </div>

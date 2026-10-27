@@ -1,0 +1,126 @@
+/* Toggle line kept in step with .completed-footer-toggle by hand, so the two footers
+   read as a pair. */
+.upcoming-footer {
+  padding: 2px 0 0;
+}
+
+.upcoming-footer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  font-family: var(--qj-font-body);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--qj-ink-soft);
+}
+
+.upcoming-footer-toggle:hover {
+  color: var(--qj-ink);
+}
+
+.upcoming-footer-toggle:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.upcoming-list {
+  padding: 2px 0 4px;
+}
+
+/* Compact like .completed-preview-row, but selectable, so it takes QuestRow's
+   selected treatment. */
+.upcoming-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  margin: 1px 0;
+  border-radius: var(--qj-radius);
+}
+
+.upcoming-row:hover {
+  background: var(--qj-wash);
+}
+
+.upcoming-row[data-selected="true"] {
+  background: var(--qj-selected);
+  border-radius: var(--qj-radius-quest-selected);
+}
+
+.upcoming-row[data-selected="true"]:hover {
+  background: var(--qj-selected-hover);
+}
+
+.upcoming-accent {
+  width: 2px;
+  align-self: stretch;
+  flex: none;
+  background: var(--qj-rule);
+}
+
+.upcoming-row[data-selected="true"] .upcoming-accent {
+  background: var(--qj-selected-ink-soft);
+}
+
+/* Wraps the date under the title rather than squeezing it: the left panel clips. The
+   wrap is triggered by .upcoming-title's content-sized basis below. */
+.upcoming-select-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+}
+
+.upcoming-select-area:focus-visible {
+  outline: var(--qj-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Over the selected purple the ink ring would vanish; see QuestRow.css. */
+.upcoming-row[data-selected="true"] :focus-visible {
+  outline: var(--qj-focus-ring-inverse);
+}
+
+/* Basis `auto` (its text width), not the 0 of `flex: 1`: with a zero basis the title
+   always fit beside the date and squeezed instead, so the date never wrapped. Now a
+   title too long to share the line pushes the date onto the next one, then shrinks to
+   the panel; a short one still grows to fill the row. */
+.upcoming-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* The left panel clips rather than scrolls, so a long unbroken title must break. */
+  overflow-wrap: anywhere;
+  font-family: var(--qj-font-body);
+  font-size: 15px;
+  color: var(--qj-ink-muted);
+}
+
+.upcoming-date {
+  flex-shrink: 0;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--qj-ink-faint);
+}
+
+.upcoming-row[data-selected="true"] .upcoming-title {
+  color: var(--qj-selected-ink);
+}
+
+.upcoming-row[data-selected="true"] .upcoming-date {
+  color: var(--qj-selected-icon);
+}

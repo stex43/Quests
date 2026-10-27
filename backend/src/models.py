@@ -1,8 +1,8 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String, Text, func, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -28,6 +28,12 @@ class Arc(Base):
 
 class Quest(Base):
     __tablename__ = "quests"
+    # At most one open instance per repeating series. Partial, so a series' completed
+    # history is unconstrained. Not deferrable: writes that swap which instance is open
+    # must flush in an order that never has two open at once (see QuestRepository).
+    __table_args__ = (
+        Index("uq_quests_open_series", "series_id", unique=True, postgresql_where=text("completed = false")),
+    )
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     arc_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("arcs.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -37,6 +43,17 @@ class Quest(Base):
     # transition from the client's reported UTC offset. Stored as a plain date so it is frozen:
     # it never shifts when the quest is later viewed from another time zone.
     completed_on: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
+    # The occurrence day of a repeating series instance, server-computed from its rule; NULL
+    # for plain quests. An open instance due after the viewer's today is listed as upcoming
+    # rather than among the arc's quests; one due before it is overdue and simply stays open.
+    due_on: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
+    # Shared by every instance of one series. There is no series table: the instances are the
+    # series, so an arc's cascade delete leaves nothing orphaned.
+    series_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, default=None, index=True)
+    # The rule in its stored form (see src/recurrence.py), copied verbatim to each spawned
+    # instance so a weekly anchor_on stays fixed for the whole series. JSON so new rule kinds
+    # need no migration.
+    recurrence: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     arc: Mapped[Arc] = relationship(back_populates="quests", lazy="raise")

@@ -79,7 +79,7 @@ def test_archive_view_omits_arcs_with_no_completed_quests(client, make_arc, make
 
 
 def test_utc_offset_shifts_today_boundary_near_utc_midnight(client, make_arc, make_quest, monkeypatch):
-    import src.routers.arcs as arcs_module
+    import src.recurrence as recurrence_module
 
     # Freeze "now" to just before UTC midnight so offset 0 sees the quest as "yesterday"
     # but a positive offset shifts the local day forward into "today".
@@ -90,7 +90,7 @@ def test_utc_offset_shifts_today_boundary_near_utc_midnight(client, make_arc, ma
         def now(cls, tz=None):
             return frozen_now if tz is not None else frozen_now.replace(tzinfo=None)
 
-    monkeypatch.setattr(arcs_module, "datetime", _FrozenDatetime)
+    monkeypatch.setattr(recurrence_module, "datetime", _FrozenDatetime)
 
     arc = make_arc()
     # Quest completed "today" from the completer's perspective at the frozen instant with a

@@ -1,6 +1,8 @@
 import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
-import type { Quest } from "../types";
+import { describeRecurrence, formatDay, localCalendarDay } from "../dateFormat";
+import type { Quest, Recurrence } from "../types";
 import { PencilIcon } from "./icons";
+import { RecurrencePicker } from "./RecurrencePicker";
 import "./QuestDetail.css";
 
 interface Props {
@@ -8,27 +10,17 @@ interface Props {
   arcTitle: string | null;
   onUpdate: (questId: string, title: string, description: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
+  onSetRecurrence: (questId: string, recurrence: Recurrence | null) => Promise<void>;
 }
 
 const NBSP = "\u00a0";
-
-// Reshapes the server's YYYY-MM-DD into dd.MM.yyyy. Purely textual on purpose: the value
-// is a calendar day with no time zone, and `new Date("2026-01-01")` would read it as UTC
-// midnight and render the previous day for anyone west of UTC. Returns null for a missing
-// or malformed value so the caller can fall back to prose.
-function formatCompletedOn(completedOn: string | null): string | null {
-  if (!completedOn) return null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(completedOn);
-  if (!match) return null;
-  const [, year, month, day] = match;
-  return `${day}.${month}.${year}`;
-}
 
 export const QuestDetail = memo(function QuestDetail({
   quest,
   arcTitle,
   onUpdate,
   onToggleComplete,
+  onSetRecurrence,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -48,6 +40,7 @@ export const QuestDetail = memo(function QuestDetail({
   // does that records its destination here and the effect below restores it.
   const pendingFocusRef = useRef<"input" | "description" | "button" | null>(null);
   const errorId = useId();
+  const repeatLabelId = useId();
 
   const isSaving = savingQuestId !== null;
   // The in-flight save belongs to one quest, so the fields key off this instead of the
@@ -221,6 +214,19 @@ export const QuestDetail = memo(function QuestDetail({
     }
   }, [quest, onToggleComplete]);
 
+  // Saves on every change, with nothing disabled meanwhile -- same reasoning as the stamp
+  // above. useQuests.setRecurrence applies the rule optimistically and queues changes
+  // made while one is in flight, so rapid clicks neither race nor drop each other.
+  const handleRecurrenceChange = useCallback(
+    (recurrence: Recurrence | null) => {
+      if (!quest) return;
+      onSetRecurrence(quest.id, recurrence).catch(() => {
+        // error displayed by parent via mutationError
+      });
+    },
+    [quest, onSetRecurrence],
+  );
+
   const handleTitleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") void commitEdit(true);
@@ -256,7 +262,14 @@ export const QuestDetail = memo(function QuestDetail({
   // use still has to be reachable by keyboard to explain itself.
   const isTitleEmpty = isEditing && editTitle.trim() === "";
 
-  const completedOnLabel = quest ? formatCompletedOn(quest.completedOn) : null;
+  const completedOnLabel = quest ? formatDay(quest.completedOn) : null;
+  // An open repeating instance's standing against its due day. Same string comparison
+  // as useQuests' bucket split (YYYY-MM-DD sorts chronologically).
+  const openDueOn = quest && !quest.completed ? quest.dueOn : null;
+  const dueOnLabel = formatDay(openDueOn);
+  const today = localCalendarDay(new Date());
+  const isOverdue = openDueOn !== null && openDueOn < today;
+  const isUpcoming = openDueOn !== null && openDueOn > today;
 
   // Split on code points (not UTF-16 units) so an astral first character
   // (e.g. an emoji) isn't torn into broken surrogate halves.
@@ -363,11 +376,22 @@ export const QuestDetail = memo(function QuestDetail({
               )}
               <div className="quest-detail-meta">
                 Arc: {arcTitle ?? "Unassigned"} ·{" "}
-                {quest.completed
-                  ? completedOnLabel
-                    ? `Completed ${completedOnLabel}`
-                    : "Completed"
-                  : "Active"}
+                {quest.completed ? (
+                  completedOnLabel ? (
+                    `Completed ${completedOnLabel}`
+                  ) : (
+                    "Completed"
+                  )
+                ) : isOverdue ? (
+                  <span className="quest-detail-overdue">Overdue · due {dueOnLabel}</span>
+                ) : dueOnLabel ? (
+                  `${isUpcoming ? "Upcoming" : "Active"} · due ${dueOnLabel}`
+                ) : (
+                  "Active"
+                )}
+                {!quest.completed &&
+                  quest.recurrence &&
+                  ` · ${describeRecurrence(quest.recurrence)}`}
               </div>
             </div>
           </div>
@@ -393,7 +417,24 @@ export const QuestDetail = memo(function QuestDetail({
             </p>
           )}
 
-          <div className="quest-detail-subtasks-label">SUBTASKS</div>
+          {/* Open quests only: a completed instance is series history, and the server
+              rejects rule changes on it. Keyed on the quest so the picker's half-typed
+              interval never carries over to the next quest selected. */}
+          {!quest.completed && (
+            <div className="quest-detail-repeat">
+              <div className="quest-detail-section-label" id={repeatLabelId}>
+                REPEAT
+              </div>
+              <RecurrencePicker
+                key={quest.id}
+                value={quest.recurrence}
+                onChange={handleRecurrenceChange}
+                labelledBy={repeatLabelId}
+              />
+            </div>
+          )}
+
+          <div className="quest-detail-section-label">SUBTASKS</div>
           <div className="quest-detail-subtask-card">
             <span className="quest-detail-subtask-empty">No subtasks yet.</span>
           </div>

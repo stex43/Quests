@@ -10,5 +10,7 @@
 - [project_tooling.md](project_tooling.md) — `tsc -b` typecheck (plain `tsc --noEmit` checks nothing here), pre-commit re-staging/partial-staging rules, husky `prepare` side effect, and why this memory is tracked in the repo
 - [project_backend_test_suite.md](project_backend_test_suite.md) — First backend pytest suite (testcontainers + savepoint-per-test isolation): established conventions not to re-flag, and first-review issues (timezone flaky test, fixture hygiene, CI lint scope) — all resolved as of the 2026-10-27 re-review
 
+- [project_recurring_quests.md](project_recurring_quests.md) — Repeating quests (2026-10-27): three-bucket client state, non-deferrable open-series index flush ordering, date-string rules, and open first-review findings to re-check
+
 ## Feedback
 - [feedback_focus_review_scope.md](feedback_focus_review_scope.md) — Settled focus-indicator decisions not to re-raise, and the user's preference for findings that clicking cannot surface
