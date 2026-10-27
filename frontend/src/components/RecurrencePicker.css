@@ -94,3 +94,11 @@
   outline: 2px solid var(--qj-error);
   outline-offset: 2px;
 }
+
+/* Inline after "weeks", wrapping onto its own line when the row is narrow. Upright,
+   unlike the italic row prose, so it reads as a message rather than part of the rule. */
+.recurrence-picker-interval-error {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--qj-error);
+}

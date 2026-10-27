@@ -1,4 +1,4 @@
-import { memo, useEffect, useId, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
 import { PencilIcon, RepeatIcon, TrashIcon } from "./icons";
 import type { Arc, Quest, Recurrence } from "../types";
 import { describeRecurrence } from "../dateFormat";
@@ -61,6 +61,10 @@ export const ArcCard = memo(function ArcCard({
   // (the toggle shows it is set) rather than silently discarding it.
   const [newQuestRecurrence, setNewQuestRecurrence] = useState<Recurrence | null>(null);
   const [isRepeatPickerOpen, setIsRepeatPickerOpen] = useState(false);
+  // Mirrors newQuestRecurrence for handleCreateQuest, whose closure only sees the draft
+  // as it was when the create started -- after the await it must compare against the
+  // draft as it is now.
+  const newQuestRecurrenceRef = useRef<Recurrence | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
   const commitInFlightRef = useRef(false);
@@ -134,18 +138,31 @@ export const ArcCard = memo(function ArcCard({
     }
   }
 
+  // Stable, so the memoized picker doesn't re-render with every ArcCard render.
+  const changeNewQuestRecurrence = useCallback((rule: Recurrence | null) => {
+    newQuestRecurrenceRef.current = rule;
+    setNewQuestRecurrence(rule);
+  }, []);
+
   async function handleCreateQuest() {
     if (createQuestInFlightRef.current) return;
     const title = newQuestTitle.trim();
     if (!title) return;
     createQuestInFlightRef.current = true;
     setIsCreatingQuest(true);
+    // The rule this create sends. The picker stays live while the request is in flight,
+    // and every change makes a new object, so identity tells whether the draft moved on.
+    const recurrence = newQuestRecurrence;
     try {
-      await onCreateQuest(arc.id, title, newQuestRecurrence);
+      await onCreateQuest(arc.id, title, recurrence);
       setNewQuestTitle("");
-      // Back to a plain, one-line form: a repeat is a per-quest choice, not a mode.
-      setNewQuestRecurrence(null);
-      setIsRepeatPickerOpen(false);
+      // Back to a plain, one-line form: a repeat is a per-quest choice, not a mode. Only
+      // when the draft is still the rule just used, though: a change made mid-flight is
+      // meant for the next quest and would otherwise be silently dropped.
+      if (newQuestRecurrenceRef.current === recurrence) {
+        changeNewQuestRecurrence(null);
+        setIsRepeatPickerOpen(false);
+      }
     } catch {
       // error displayed by parent via mutationError
     } finally {
@@ -398,7 +415,7 @@ export const ArcCard = memo(function ArcCard({
                 <div className="new-quest-recurrence" id={repeatPickerId}>
                   <RecurrencePicker
                     value={newQuestRecurrence}
-                    onChange={setNewQuestRecurrence}
+                    onChange={changeNewQuestRecurrence}
                     label="Repeat new quest"
                   />
                 </div>

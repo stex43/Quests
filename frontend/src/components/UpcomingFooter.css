@@ -67,7 +67,8 @@
   background: var(--qj-selected-ink-soft);
 }
 
-/* Wraps the date under the title rather than squeezing it: the left panel clips. */
+/* Wraps the date under the title rather than squeezing it: the left panel clips. The
+   wrap is triggered by .upcoming-title's content-sized basis below. */
 .upcoming-select-area {
   display: flex;
   flex-wrap: wrap;
@@ -95,8 +96,12 @@
   outline: var(--qj-focus-ring-inverse);
 }
 
+/* Basis `auto` (its text width), not the 0 of `flex: 1`: with a zero basis the title
+   always fit beside the date and squeezed instead, so the date never wrapped. Now a
+   title too long to share the line pushes the date onto the next one, then shrinks to
+   the panel; a short one still grows to fill the row. */
 .upcoming-title {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   /* The left panel clips rather than scrolls, so a long unbroken title must break. */
   overflow-wrap: anywhere;

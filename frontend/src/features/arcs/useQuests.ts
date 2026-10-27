@@ -146,10 +146,12 @@ function moveToRecentCompleted(arcs: Arc[], questId: string, changes: Partial<Qu
 
 // The inverse of moveToRecentCompleted: moves a quest into the open bucket `target`,
 // decrementing completedCount if it came out of `recentCompleted`, or patches it in place
-// if it's already in `target` (the second-call case described above). Lands at the front
-// of `quests`, or at its due-day slot in `upcoming`. Used for the active-view uncomplete
-// direction, to roll back a failed complete, and by setRecurrence, whose new due day can
-// carry an open quest from one open bucket to the other.
+// if it's already in `target` (the second-call case described above). Lands at the end
+// of `quests`, matching the server's oldest-first order for the instances that usually
+// move there (a series' latest, so newest, row), or at its due-day slot in `upcoming`.
+// Used for the active-view uncomplete direction, to roll back a failed complete, and by
+// setRecurrence, whose new due day can carry an open quest from one open bucket to the
+// other.
 function moveToOpen(
   arcs: Arc[],
   questId: string,
@@ -175,7 +177,7 @@ function moveToOpen(
     const placed =
       target === "upcoming"
         ? { ...without, upcoming: insertByDueOn(without.upcoming, quest) }
-        : { ...without, quests: [quest, ...without.quests] };
+        : { ...without, quests: [...without.quests, quest] };
     return location.bucket === "recentCompleted"
       ? { ...placed, completedCount: a.completedCount - 1 }
       : placed;
@@ -231,6 +233,12 @@ export function useQuests(
   // any older waiting one) and is sent when the current request settles.
   const recurrenceInFlightRef = useRef<Set<string>>(new Set());
   const recurrenceQueuedRef = useRef<Map<string, Recurrence | null>>(new Map());
+  // Quests remove() is deleting or has deleted. A setRecurrence request racing the delete
+  // can only 404, and that failure is about a quest the user has already got rid of, so
+  // it is swallowed rather than surfaced as a banner. Entries stay after a successful
+  // delete (the id is never reused, so this holds at most one per quest deleted this
+  // session) because the racing response can land after the delete's own.
+  const removedQuestIdsRef = useRef<Set<string>>(new Set());
 
   const create = useCallback(
     (arcId: string, title: string, recurrence: Recurrence | null = null) =>
@@ -260,7 +268,17 @@ export function useQuests(
   const remove = useCallback(
     (questId: string) =>
       runMutation(async () => {
-        await deleteQuest(questId);
+        // Marked before the request, since a racing setRecurrence can fail before this
+        // delete's response arrives. A rule change still queued behind an in-flight one
+        // is dropped too: sent after the delete it could only 404.
+        removedQuestIdsRef.current.add(questId);
+        recurrenceQueuedRef.current.delete(questId);
+        try {
+          await deleteQuest(questId);
+        } catch (e) {
+          removedQuestIdsRef.current.delete(questId);
+          throw e;
+        }
         setArcs((prev) => removeOpenQuest(prev, questId));
       }),
     [runMutation, setArcs],
@@ -315,21 +333,28 @@ export function useQuests(
           try {
             if (completed) {
               const { quest: updated, removedInstanceId } = await uncompleteQuest(questId);
-              // Only the completion fields are taken from the response, so a concurrent
-              // title/description edit is not clobbered by this toggle. moveToOpen is a
-              // no-op here in the archive-shaped case (the quest is already gone) and an
-              // in-place patch in the active-view case (the optimistic move already
-              // relocated it, and the due day an uncomplete leaves untouched picks the
-              // same bucket) -- either way this call needs no bucket-awareness itself.
+              // Only the completion and recurrence fields are taken from the response, so
+              // a concurrent title/description edit is not clobbered by this toggle. The
+              // recurrence fields matter because only a series' latest completed instance
+              // gets the undo; an older one, or one whose series was stopped, comes back
+              // as a plain quest (no rule, no due day). moveToOpen is a no-op here in the
+              // archive-shaped case (the quest is already gone); in the active-view case
+              // it patches in place, or carries the quest across from `upcoming` when the
+              // server cleared the due day the optimistic move filed it by.
               setArcs((prev) => {
                 let next = moveToOpen(
                   prev,
                   questId,
-                  { completed: updated.completed, completedOn: updated.completedOn },
+                  {
+                    completed: updated.completed,
+                    completedOn: updated.completedOn,
+                    ...recurrenceFieldsOf(updated),
+                  },
                   openBucketFor(updated.dueOn, localCalendarDay(new Date())),
                 );
-                // The server deleted the instance this one's completion had spawned, so
-                // this one is the series' open instance again.
+                // The latest-instance undo: the server deleted the instance this one's
+                // completion had spawned, so this one is the series' open instance again.
+                // Null in the plain case, where nothing was deleted.
                 if (removedInstanceId !== null) next = removeOpenQuest(next, removedInstanceId);
                 // Mirrors the server's auto-unseal on uncomplete, so a stale sealed
                 // badge doesn't linger until the next refetch.
@@ -446,7 +471,11 @@ export function useQuests(
           // Read here rather than up front: the optimistic updater may not have run yet
           // when this function starts, but it has by the time a request has failed.
           const restore = confirmed ?? snapshot.fields;
+          // A no-op once the quest is gone: applyRecurrenceFields skips a missing quest.
           if (restore) setArcs((prev) => applyRecurrenceFields(prev, questId, restore));
+          // The quest was deleted under this request (see removedQuestIdsRef), so the
+          // failure is expected and there's nothing left for the user to retry.
+          if (removedQuestIdsRef.current.has(questId)) return;
           throw e;
         } finally {
           recurrenceInFlightRef.current.delete(questId);

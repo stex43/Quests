@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import { WEEKDAY_ABBREVIATIONS, WEEKDAY_NAMES, weekdayIndex } from "../dateFormat";
 import type { Recurrence } from "../types";
 import "./RecurrencePicker.css";
@@ -34,6 +34,7 @@ export const RecurrencePicker = memo(function RecurrencePicker({
   // null whenever the field is showing the committed interval; set only while the user
   // is typing, and dropped again on blur.
   const [intervalDraft, setIntervalDraft] = useState<string | null>(null);
+  const intervalErrorId = useId();
 
   const weekly = value?.frequency === "weekly" ? value : null;
   const intervalText = intervalDraft ?? (weekly ? weekly.interval.toString() : "");
@@ -143,12 +144,20 @@ export const RecurrencePicker = memo(function RecurrencePicker({
               value={intervalText}
               aria-label={`Repeat every how many weeks (${MIN_INTERVAL.toString()} to ${MAX_INTERVAL.toString()})`}
               aria-invalid={isIntervalInvalid}
+              aria-describedby={isIntervalInvalid ? intervalErrorId : undefined}
               onChange={(e) => {
                 handleIntervalChange(e.target.value);
               }}
               onBlur={handleIntervalBlur}
             />
             <span aria-hidden="true">{weekly.interval === 1 ? "week" : "weeks"}</span>
+            {/* The red ring alone says only that something is wrong; this says what. Shown
+                while the draft is out of range, gone once blur clamps it back in. */}
+            {isIntervalInvalid && (
+              <span id={intervalErrorId} className="recurrence-picker-interval-error">
+                {`Must be ${MIN_INTERVAL.toString()}–${MAX_INTERVAL.toString()}`}
+              </span>
+            )}
           </div>
           <div className="recurrence-picker-days" role="group" aria-label="Repeat on">
             {WEEKDAY_ABBREVIATIONS.map((abbreviation, weekday) => {
