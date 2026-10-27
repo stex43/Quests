@@ -8,6 +8,7 @@
 - [project_lan_serving.md](project_lan_serving.md) — App is served to local-network devices from a host whose IP can change; LAN-wide CORS is intended, LanRequestGuard covers CSRF/rebinding; settled decisions (exposure model, no .lan), what the re-review resolved, and what stays open on purpose
 - [project_deploy_console.md](project_deploy_console.md) — The sole deploy mechanism: since 2026-10-13 a single root `deploy.py` (superseding the `deploy/` package, PR #23); its invariants, round-1 review gaps to check for regression, and a regression already found in the rewrite
 - [project_tooling.md](project_tooling.md) — `tsc -b` typecheck (plain `tsc --noEmit` checks nothing here), pre-commit re-staging/partial-staging rules, husky `prepare` side effect, and why this memory is tracked in the repo
+- [project_backend_test_suite.md](project_backend_test_suite.md) — First backend pytest suite (testcontainers + savepoint-per-test isolation): established conventions not to re-flag, and first-review issues (timezone flaky test, fixture hygiene, CI lint scope) — all resolved as of the 2026-10-27 re-review
 
 ## Feedback
 - [feedback_focus_review_scope.md](feedback_focus_review_scope.md) — Settled focus-indicator decisions not to re-raise, and the user's preference for findings that clicking cannot surface
