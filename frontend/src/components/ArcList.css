@@ -124,3 +124,48 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Mobile list screen: a full-width page rather than the left half of the book spread.
+   640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. The panel itself still
+   clips; .arc-list-body below is what scrolls, keeping the panel title pinned. */
+@media (max-width: 640px) {
+  .arc-list-panel {
+    flex: 1;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .arc-list-header {
+    padding: 14px 16px 10px;
+  }
+
+  .arc-list-body {
+    padding: 6px 10px 24px;
+  }
+
+  .error-banner {
+    gap: 4px;
+    padding: 6px 0 6px 14px;
+  }
+
+  .error-banner-close {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 20px;
+  }
+
+  .arc-list-input {
+    min-height: 44px;
+    box-sizing: border-box;
+    font-size: 16px; /* 16px+ keeps iOS from zooming the page on focus */
+  }
+
+  .add-button {
+    width: 44px;
+    height: 44px;
+  }
+}

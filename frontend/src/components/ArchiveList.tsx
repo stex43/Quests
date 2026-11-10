@@ -58,12 +58,17 @@ export const ArchiveList = memo(function ArchiveList({
   // force-expand itself is a derived value below rather than a setState here, so
   // this effect only reaches out to the DOM and notifies the parent -- neither of
   // which is this component's own state.
+  // The tab switch renders this list straight away with the Tasks view's arcs, before
+  // the archive fetch lands, so the target card may not exist yet. In that case the
+  // request stays pending (focusArcId is not cleared) and `arcs` in the deps re-runs
+  // this once the archive data arrives.
   useEffect(() => {
     if (!focusArcId) return;
     const card = arcCardElements(panelRef.current).find((el) => el.dataset.arcId === focusArcId);
-    card?.scrollIntoView({ block: "nearest" });
+    if (!card) return;
+    card.scrollIntoView({ block: "nearest" });
     onFocusHandled();
-  }, [focusArcId, onFocusHandled]);
+  }, [focusArcId, onFocusHandled, arcs]);
 
   const toggleExpand = useCallback((arcId: string) => {
     setCollapsedArcIds((prev) => {

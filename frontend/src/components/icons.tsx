@@ -34,6 +34,26 @@ export function TrashIcon() {
   );
 }
 
+// The mobile header's "back to list" button.
+export function ArrowLeftIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </svg>
+  );
+}
+
 // Marks a repeating quest, and opens the repeat options in the add-quest form.
 export function RepeatIcon() {
   return (

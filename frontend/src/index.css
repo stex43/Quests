@@ -3,6 +3,8 @@
   --qj-backdrop: #1a1917;
   --qj-backdrop-glow: #242119;
   --qj-backdrop-deep: #14120f;
+  /* Mobile bottom tab bar, a shade above the deep backdrop it sits on. */
+  --qj-tabbar: #1a1814;
 
   /* Panels */
   --qj-panel-left: linear-gradient(180deg, #ded7c8, #d6cdb8);
@@ -166,6 +168,15 @@ body {
 .icon-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Touch targets. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. */
+@media (max-width: 640px) {
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
 }
 
 /* Hides content visually while keeping it in the accessibility tree -- for headings

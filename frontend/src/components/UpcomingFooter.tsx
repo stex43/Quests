@@ -57,6 +57,7 @@ export const UpcomingFooter = memo(function UpcomingFooter({
                 <button
                   type="button"
                   className="upcoming-select-area"
+                  data-quest-id={quest.id}
                   onClick={() => {
                     onSelectQuest(quest);
                   }}

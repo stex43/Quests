@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { Arc, Quest, Recurrence } from "../types";
 import { ArcCard } from "./ArcCard";
+import { ErrorBanner } from "./ErrorBanner";
 import "./ArcList.css";
 
 // The rendered arc cards, in display order (ArcCard tags its root with data-arc-id).
@@ -134,19 +135,7 @@ export const ArcList = memo(function ArcList({
       </div>
 
       <div className="arc-list-body">
-        {mutationError && (
-          <div className="error-banner">
-            <span>{mutationError}</span>
-            <button
-              type="button"
-              className="error-banner-close"
-              onClick={onDismissError}
-              aria-label="Dismiss error"
-            >
-              ×
-            </button>
-          </div>
-        )}
+        {mutationError && <ErrorBanner message={mutationError} onDismiss={onDismissError} />}
 
         <div className="new-arc-row">
           <input

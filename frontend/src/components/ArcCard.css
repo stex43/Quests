@@ -391,3 +391,89 @@
   outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
+
+/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. */
+@media (max-width: 640px) {
+  .arc-card {
+    margin: 12px 2px 0;
+  }
+
+  .arc-expand-area {
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  .arc-title-input {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  .arc-delete-confirm-button,
+  .arc-seal-confirm-button {
+    min-height: 44px;
+    padding: 0 16px;
+  }
+
+  /* Wraps once the input would drop under ~10rem, so the two 44px buttons never push
+     past the panel edge. */
+  .new-quest-row {
+    flex-wrap: wrap;
+    padding: 6px 2px 4px;
+  }
+
+  .new-quest-input {
+    flex: 1 1 10rem;
+    min-height: 44px;
+    box-sizing: border-box;
+    font-size: 16px; /* 16px+ keeps iOS from zooming the page on focus */
+  }
+
+  .small-add-button,
+  .new-quest-repeat-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .new-quest-recurrence {
+    padding: 2px 2px 6px;
+  }
+
+  /* Sealed header on two lines, as in the mock: title above "sealed <date>", with the
+     chevron and seal glyph centred down the left. The inline "sealed" label and the
+     dotted filler only made sense on one line, so they drop out. */
+  .arc-header--sealed .arc-expand-area {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 1px;
+    min-height: 48px;
+  }
+
+  .arc-header--sealed .arc-chevron,
+  .arc-header--sealed .arc-seal-glyph {
+    grid-row: 1 / span 2;
+  }
+
+  .arc-header--sealed .arc-title {
+    grid-column: 3;
+    grid-row: 1;
+    font-size: 13.5px;
+  }
+
+  .arc-header--sealed .arc-sealed-label,
+  .arc-header--sealed .arc-sealed-filler {
+    display: none;
+  }
+
+  .arc-header--sealed .arc-sealed-date {
+    grid-column: 3;
+    grid-row: 2;
+    font-size: 13.5px;
+  }
+
+  .arc-unseal-link {
+    min-height: 44px;
+  }
+}

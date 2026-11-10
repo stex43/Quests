@@ -25,3 +25,10 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. */
+@media (max-width: 640px) {
+  .completed-footer-toggle {
+    min-height: 44px;
+  }
+}

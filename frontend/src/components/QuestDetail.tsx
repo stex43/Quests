@@ -11,6 +11,10 @@ interface Props {
   onUpdate: (questId: string, title: string, description: string) => Promise<void>;
   onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
   onSetRecurrence: (questId: string, recurrence: Recurrence | null) => Promise<void>;
+  // Mobile only: the detail is a screen of its own there, replacing the list the user
+  // tapped in, so focus moves to the title heading when a quest opens. Desktop leaves it
+  // false and keeps focus in the list (see the quest-switch effect below).
+  focusHeadingOnOpen?: boolean;
 }
 
 const NBSP = "\u00a0";
@@ -21,6 +25,7 @@ export const QuestDetail = memo(function QuestDetail({
   onUpdate,
   onToggleComplete,
   onSetRecurrence,
+  focusHeadingOnOpen = false,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -33,6 +38,7 @@ export const QuestDetail = memo(function QuestDetail({
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const commitInFlightRef = useRef(false);
   const prevQuestIdRef = useRef<string | null>(null);
   // Where focus should land once the controls are interactive again. Disabling the
@@ -52,15 +58,18 @@ export const QuestDetail = memo(function QuestDetail({
 
   // Switching quests closes the editor but deliberately leaves pendingFocusRef null:
   // the user's focus is in the left-hand list, and yanking it into the detail panel
-  // would fight them. Only the explicit save/cancel paths request focus.
+  // would fight them. Only the explicit save/cancel paths request focus. Mobile is the
+  // exception (focusHeadingOnOpen): there the list the user tapped in is hidden, so
+  // focus would otherwise fall to <body>.
   useEffect(() => {
     if (quest?.id !== prevQuestIdRef.current) {
       setIsEditing(false);
       setEditTitle(quest?.title ?? "");
       setEditDescription(quest?.description ?? "");
       prevQuestIdRef.current = quest?.id ?? null;
+      if (focusHeadingOnOpen) headingRef.current?.focus();
     }
-  }, [quest]);
+  }, [quest, focusHeadingOnOpen]);
 
   useEffect(() => {
     if (isEditing) titleInputRef.current?.focus();
@@ -332,7 +341,11 @@ export const QuestDetail = memo(function QuestDetail({
                     />
                   </>
                 ) : (
-                  <h2 className="quest-detail-title">
+                  <h2
+                    ref={headingRef}
+                    className="quest-detail-title"
+                    tabIndex={focusHeadingOnOpen ? -1 : undefined}
+                  >
                     <span className="quest-detail-dropcap">{dropCap}</span>
                     <span className="quest-detail-title-rest">{titleRest}</span>
                   </h2>

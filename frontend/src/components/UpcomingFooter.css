@@ -124,3 +124,24 @@
 .upcoming-row[data-selected="true"] .upcoming-date {
   color: var(--qj-selected-icon);
 }
+
+/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. Unlike the
+   inert completed-preview rows (36px), an upcoming row opens the quest, so it takes the
+   full 44px target. */
+@media (max-width: 640px) {
+  .upcoming-footer-toggle {
+    min-height: 44px;
+  }
+
+  .upcoming-row {
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 14px;
+  }
+
+  .upcoming-select-area {
+    align-self: stretch;
+    align-content: center;
+    min-height: 44px;
+  }
+}
