@@ -62,6 +62,7 @@ export const QuestRow = memo(function QuestRow({
       <button
         type="button"
         className="quest-select-area"
+        data-quest-id={quest.id}
         onClick={() => {
           onSelect(quest);
         }}

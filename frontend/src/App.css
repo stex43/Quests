@@ -145,3 +145,130 @@
     padding-bottom: 6px;
   }
 }
+
+/* Mobile: a list/detail stack instead of the book spread (App.tsx renders one screen at
+   a time, plus a bottom tab bar). 640px is MOBILE_MEDIA_QUERY in
+   features/arcs/useIsMobile.ts -- change both together. Comes after the max-height
+   block so a phone (narrow and short) takes these header paddings, not those. */
+@media (max-width: 640px) {
+  .app-shell {
+    /* dvh tracks the mobile browser's collapsing toolbars; the vh line in the base
+       rule stays as the fallback for browsers without it. */
+    height: 100dvh;
+    padding: 0;
+    gap: 0;
+    background: var(--qj-backdrop-deep);
+  }
+
+  .app-header {
+    flex: none;
+    flex-wrap: nowrap;
+    min-height: 56px;
+    box-sizing: border-box;
+    padding: calc(env(safe-area-inset-top) + 6px) 12px 6px;
+  }
+
+  .app-header-brand {
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .app-header-title {
+    font-size: 22px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-header-subtitle {
+    display: none;
+  }
+
+  .app-back-button {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    /* Pulls the arrow glyph's own left bearing out to the header padding. */
+    margin-left: -8px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: var(--qj-radius);
+    color: var(--qj-gilt);
+    cursor: pointer;
+  }
+
+  /* Hover-capable pointers only: a touch tap leaves :hover stuck on the button. */
+  @media (hover: hover) {
+    .app-back-button:hover {
+      background: var(--qj-selected-icon-wash);
+    }
+  }
+
+  /* On the dark shell, like .app-nav-tab. */
+  .app-back-button:focus-visible {
+    outline: var(--qj-focus-ring-inverse);
+    outline-offset: -2px;
+  }
+
+  .app-body {
+    position: relative; /* anchors the covered list screen below */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-mobile-list-screen {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Under an open detail screen: out of the flow and invisible, but still laid out, so
+     .arc-list-body keeps its scrollTop (display: none would reset it). App.tsx also
+     sets inert, keeping it unfocusable and out of the accessibility tree. */
+  .app-mobile-list-screen--covered {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+  }
+
+  /* App-level on mobile (App.tsx), between the header and the body, so it shows on the
+     list and on an open quest alike. */
+  .app-shell > .error-banner {
+    flex: none;
+    margin: 8px 10px 0;
+  }
+
+  .app-bottom-nav {
+    flex: none;
+    display: flex;
+    height: calc(58px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--qj-tabbar);
+    border-top: 2px solid var(--qj-panel-border);
+  }
+
+  .app-bottom-nav .app-nav-tab {
+    flex: 1;
+    height: 100%;
+    padding: 0;
+    font-size: 14px;
+    border-bottom: none;
+    border-top: 2px solid transparent;
+  }
+
+  .app-bottom-nav .app-nav-tab:focus-visible {
+    outline-offset: -4px;
+  }
+
+  .app-bottom-nav .app-nav-tab--active {
+    border-top-color: var(--qj-gilt);
+  }
+}

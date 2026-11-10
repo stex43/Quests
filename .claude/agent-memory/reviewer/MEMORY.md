@@ -14,3 +14,4 @@
 
 ## Feedback
 - [feedback_focus_review_scope.md](feedback_focus_review_scope.md) — Settled focus-indicator decisions not to re-raise, and the user's preference for findings that clicking cannot surface
+- [Recurring frontend review findings](project_recurring_review_findings.md): mutationError is only visible in the ArcList banner; stale arcs during a view switch; remounts at the breakpoint; no shell for git diff

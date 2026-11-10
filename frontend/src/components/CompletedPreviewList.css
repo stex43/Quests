@@ -56,3 +56,18 @@
   outline: var(--qj-focus-ring);
   outline-offset: 2px;
 }
+
+/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. The rows
+   are inert (no tap target), so they only take the mock's compact 36px; the link is
+   interactive and gets the full 44px. */
+@media (max-width: 640px) {
+  .completed-preview-row {
+    min-height: 36px;
+    box-sizing: border-box;
+  }
+
+  .completed-preview-viewall {
+    min-height: 44px;
+    text-align: left;
+  }
+}

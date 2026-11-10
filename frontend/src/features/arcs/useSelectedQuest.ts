@@ -26,10 +26,15 @@ export function useSelectedQuest(arcs: Arc[]) {
     setSelectedQuestId(quest.id);
   }, []);
 
+  // Mobile's "back to list": the detail screen is shown iff a quest is selected.
+  const clearSelection = useCallback(() => {
+    setSelectedQuestId(null);
+  }, []);
+
   // Derived fresh on every render, so there is nothing to keep in sync with `Quest`'s
   // fields -- an id whose quest was deleted (or whose containing arc was deleted)
   // naturally resolves to null here instead of needing a separate clear-on-delete path.
   const selectedQuest = selectedQuestId !== null ? findQuestById(arcs, selectedQuestId) : null;
 
-  return { selectedQuest, select };
+  return { selectedQuest, select, clearSelection };
 }

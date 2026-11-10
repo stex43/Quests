@@ -345,3 +345,63 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Mobile detail screen: a full-width page (App.tsx shows it in place of the list), so
+   the right-hand page's seam and inner frame go. 640px is MOBILE_MEDIA_QUERY in
+   features/arcs/useIsMobile.ts. */
+@media (max-width: 640px) {
+  .quest-detail-panel {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 22px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .quest-detail-frame {
+    display: none;
+  }
+
+  .quest-detail-header {
+    gap: 12px;
+  }
+
+  .quest-stamp {
+    width: 44px;
+    height: 44px;
+    font-size: 21px;
+  }
+
+  .quest-detail-dropcap {
+    font-size: 30px;
+  }
+
+  .quest-detail-title-rest {
+    font-size: 21px;
+  }
+
+  .quest-detail-edit-button {
+    width: 44px;
+    height: 44px;
+    margin-left: 4px;
+  }
+
+  .quest-detail-title-input {
+    min-height: 44px;
+    font-size: 19px;
+  }
+
+  .description-text,
+  .quest-detail-description-input {
+    font-size: 16.5px;
+    line-height: 1.65;
+  }
+
+  .quest-detail-section-label {
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin: 28px 0 10px;
+  }
+}
