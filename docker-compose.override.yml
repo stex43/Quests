@@ -4,14 +4,29 @@ services:
       - "127.0.0.1:5432:5432"
 
   backend:
+    # Same as the prod command plus --reload (dev-only: it restarts on every edit under src/).
+    command: >
+      sh -c "
+      alembic upgrade head &&
+      uvicorn src.main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000} --reload --reload-dir src
+      "
+    # Windows bind mounts don't propagate file events into the container, so watchfiles must poll.
+    environment:
+      WATCHFILES_FORCE_POLLING: "true"
+    # alembic/ is mounted so new migrations apply on the next restart without a rebuild.
     volumes:
       - ./backend/src:/app/src
+      - ./backend/alembic:/app/alembic
 
   frontend:
     build:
       target: dev
     # The dev server reads this at startup; the prod image bakes it in as a build arg.
+    # VITE_WATCH_POLLING: Windows bind mounts don't propagate file events, so Vite must poll.
     environment:
       VITE_BACKEND_PORT: "${BACKEND_PORT:-8000}"
+      VITE_WATCH_POLLING: "true"
     volumes:
       - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/public:/app/public
