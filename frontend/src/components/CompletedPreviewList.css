@@ -2,39 +2,6 @@
   padding: 2px 0 4px;
 }
 
-.completed-preview-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 14px;
-  margin: 1px 0;
-}
-
-.completed-preview-accent {
-  width: 2px;
-  align-self: stretch;
-  flex: none;
-  background: var(--qj-rule);
-}
-
-.completed-preview-title {
-  flex: 1;
-  min-width: 0;
-  /* The left panel clips rather than scrolls, so a long unbroken title must break. */
-  overflow-wrap: anywhere;
-  font-family: var(--qj-font-body);
-  font-size: 15px;
-  color: var(--qj-done-ink);
-  text-decoration: line-through;
-}
-
-.completed-preview-date {
-  flex-shrink: 0;
-  font-style: italic;
-  font-size: 13px;
-  color: var(--qj-ink-faint);
-}
-
 .completed-preview-viewall {
   display: block;
   background: none;
@@ -57,13 +24,28 @@
   outline-offset: 2px;
 }
 
-/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. The rows
-   are inert (no tap target), so they only take the mock's compact 36px; the link is
-   interactive and gets the full 44px. */
+/* Compact rows: tighter than open quests. Specificity beats QuestRow.css. */
+.completed-preview-list .quest-row {
+  padding: 6px 14px;
+  margin: 1px 0;
+}
+
+.completed-preview-list .quest-title {
+  font-size: 15px;
+}
+
+/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. The rows are
+   QuestRows; the desktop padding above would beat QuestRow.css's mobile rule, so restate it
+   with a 44px target. The link gets the full 44px too. */
 @media (max-width: 640px) {
-  .completed-preview-row {
-    min-height: 36px;
+  .completed-preview-list .quest-row {
     box-sizing: border-box;
+    padding: 0 4px 0 12px;
+    min-height: 44px;
+  }
+
+  .completed-preview-list .quest-title {
+    font-size: 15px;
   }
 
   .completed-preview-viewall {

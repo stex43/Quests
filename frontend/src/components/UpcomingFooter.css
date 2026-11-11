@@ -32,8 +32,7 @@
   padding: 2px 0 4px;
 }
 
-/* Compact like .completed-preview-row, but selectable, so it takes QuestRow's
-   selected treatment. */
+/* Compact rows, selectable, so they take QuestRow's selected treatment. */
 .upcoming-row {
   display: flex;
   align-items: center;
@@ -125,9 +124,8 @@
   color: var(--qj-selected-icon);
 }
 
-/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. Unlike the
-   inert completed-preview rows (36px), an upcoming row opens the quest, so it takes the
-   full 44px target. */
+/* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. An upcoming
+   row opens the quest, so it takes the full 44px target. */
 @media (max-width: 640px) {
   .upcoming-footer-toggle {
     min-height: 44px;

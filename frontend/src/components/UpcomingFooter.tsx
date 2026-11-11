@@ -12,8 +12,9 @@ interface Props {
 }
 
 // The arc's repeating-quest instances whose due day is still ahead, kept out of the main
-// list until then. Unlike CompletedPreviewList's inert rows these select the quest, since
-// the detail panel is the only place to edit one, stop its repeat or complete it early.
+// list until then. Unlike CompletedPreviewList's QuestRows these only select the quest (no
+// stamp or delete), since the detail panel is the place to edit one, stop its repeat or
+// complete it early.
 // Only meaningful when there is at least one -- callers (ArcCard) guard on that before
 // rendering this at all, the same contract as CompletedFooter.
 export const UpcomingFooter = memo(function UpcomingFooter({
