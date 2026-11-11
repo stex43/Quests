@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,6 +18,9 @@ export default defineConfig({
     // mapping (or whatever the user configured VITE_DEV_PORT to) would not follow.
     strictPort: true,
     // Bare IPs and localhost are always allowed; mDNS *.local names are not by default.
-    allowedHosts: ['.local'],
+    allowedHosts: [".local"],
+    // Only the Docker dev override sets VITE_WATCH_POLLING: Windows bind mounts don't
+    // deliver file events into the container. A bare host `npm run dev` keeps native watching.
+    watch: { usePolling: process.env.VITE_WATCH_POLLING === "true" },
   },
-})
+});
