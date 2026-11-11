@@ -367,6 +367,10 @@ export const ArcCard = memo(function ArcCard({
                   arcId={arc.id}
                   quests={arc.recentCompleted}
                   completedCount={arc.completedCount}
+                  selectedQuestId={selectedQuestId}
+                  onSelectQuest={onSelectQuest}
+                  onDeleteQuest={onDeleteQuest}
+                  onToggleComplete={onToggleComplete}
                   onViewInArchive={onViewInArchive}
                 />
               )}

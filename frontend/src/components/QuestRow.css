@@ -1,5 +1,8 @@
+/* Wraps so the delete-confirm strip (flex-basis: 100%) sits on its own line under the
+   row; with a single line of children the layout is unchanged. */
 .quest-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -167,6 +170,17 @@
   background: var(--qj-selected-icon-wash);
 }
 
+/* The confirm text's crimson would be near-invisible on the selected purple, so it takes
+   the row's light ink. The neutral button keeps its own light fill and dark ink; the
+   danger button stays crimson, with a light border so it still reads against purple. */
+.quest-row[data-selected="true"] .arc-delete-confirm-text {
+  color: var(--qj-selected-ink);
+}
+
+.quest-row[data-selected="true"] .arc-delete-confirm-button--danger {
+  border-color: var(--qj-selected-icon);
+}
+
 /* Touch sizing. 640px is MOBILE_MEDIA_QUERY in features/arcs/useIsMobile.ts. */
 @media (max-width: 640px) {
   .quest-row {
@@ -174,6 +188,11 @@
     box-sizing: border-box;
     padding: 0 4px 0 12px;
     gap: 10px;
+  }
+
+  /* The row has no vertical padding here, so the confirm strip brings its own. */
+  .quest-row .arc-delete-confirm {
+    padding: 0 0 8px;
   }
 
   /* The whole text column is the tap target, not just the glyphs. */

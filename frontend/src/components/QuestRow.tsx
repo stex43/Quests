@@ -1,7 +1,9 @@
-import { memo, useState } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import { RepeatIcon, TrashIcon } from "./icons";
 import { formatDay, localCalendarDay } from "../dateFormat";
 import type { Quest } from "../types";
+// The delete confirm reuses ArcCard's .arc-delete-confirm* styles rather than copying them.
+import "./ArcCard.css";
 import "./QuestRow.css";
 
 interface Props {
@@ -21,12 +23,34 @@ export const QuestRow = memo(function QuestRow({
 }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const restoreDeleteFocusRef = useRef(false);
+  const deletePromptId = useId();
+
+  useEffect(() => {
+    if (isConfirmingDelete) {
+      cancelDeleteRef.current?.focus();
+    } else if (restoreDeleteFocusRef.current) {
+      restoreDeleteFocusRef.current = false;
+      deleteButtonRef.current?.focus();
+    }
+  }, [isConfirmingDelete]);
+
+  function cancelDelete() {
+    restoreDeleteFocusRef.current = true;
+    setIsConfirmingDelete(false);
+  }
+
   async function handleDelete() {
     setIsDeleting(true);
     try {
       await onDelete(quest.id);
     } catch {
-      // error displayed by parent via mutationError
+      // error displayed by parent via mutationError; the disabled buttons dropped focus,
+      // so hand it back to the trash button
+      cancelDelete();
     } finally {
       setIsDeleting(false);
     }
@@ -96,16 +120,52 @@ export const QuestRow = memo(function QuestRow({
           </span>
         )}
       </button>
-      <button
-        type="button"
-        className="icon-button"
-        onClick={() => void handleDelete()}
-        disabled={isDeleting}
-        aria-label="Delete quest"
-        title="Delete quest"
-      >
-        <TrashIcon />
-      </button>
+      {isConfirmingDelete ? (
+        <div
+          className="arc-delete-confirm"
+          role="group"
+          aria-labelledby={deletePromptId}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && !isDeleting) cancelDelete();
+          }}
+        >
+          <span id={deletePromptId} className="arc-delete-confirm-text">
+            Delete quest?
+          </span>
+          <button
+            type="button"
+            className="arc-delete-confirm-button arc-delete-confirm-button--danger"
+            onClick={() => void handleDelete()}
+            disabled={isDeleting}
+            aria-label={`Delete quest: ${quest.title}`}
+          >
+            Delete
+          </button>
+          <button
+            ref={cancelDeleteRef}
+            type="button"
+            className="arc-delete-confirm-button"
+            onClick={cancelDelete}
+            disabled={isDeleting}
+            aria-label={`Cancel deleting quest: ${quest.title}`}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          ref={deleteButtonRef}
+          type="button"
+          className="icon-button"
+          onClick={() => {
+            setIsConfirmingDelete(true);
+          }}
+          aria-label={`Delete quest: ${quest.title}`}
+          title="Delete quest"
+        >
+          <TrashIcon />
+        </button>
+      )}
     </div>
   );
 });

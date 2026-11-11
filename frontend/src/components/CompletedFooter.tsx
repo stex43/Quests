@@ -11,6 +11,10 @@ interface Props {
   arcId: string;
   quests: Quest[];
   completedCount: number;
+  selectedQuestId: string | null;
+  onSelectQuest: (quest: Quest) => void;
+  onDeleteQuest: (questId: string) => Promise<void>;
+  onToggleComplete: (questId: string, completed: boolean) => Promise<void>;
   onViewInArchive?: (arcId: string) => void;
 }
 
@@ -21,6 +25,10 @@ export const CompletedFooter = memo(function CompletedFooter({
   arcId,
   quests,
   completedCount,
+  selectedQuestId,
+  onSelectQuest,
+  onDeleteQuest,
+  onToggleComplete,
   onViewInArchive,
 }: Props) {
   // Defaults to collapsed: keeping the main list short is the whole point of this
@@ -43,13 +51,17 @@ export const CompletedFooter = memo(function CompletedFooter({
         >
           ▶
         </span>
-        {completedCount.toString()} completed
+        {completedCount.toString()} completed today
       </button>
       {isExpanded && (
         <CompletedPreviewList
           arcId={arcId}
           quests={quests}
           completedCount={completedCount}
+          selectedQuestId={selectedQuestId}
+          onSelectQuest={onSelectQuest}
+          onDeleteQuest={onDeleteQuest}
+          onToggleComplete={onToggleComplete}
           onViewInArchive={onViewInArchive}
         />
       )}

@@ -86,6 +86,10 @@ export const SealedArcHeader = memo(function SealedArcHeader({
                 arcId={arcId}
                 quests={recentCompleted}
                 completedCount={completedCount}
+                selectedQuestId={selectedQuestId}
+                onSelectQuest={onSelectQuest}
+                onDeleteQuest={onDeleteQuest}
+                onToggleComplete={onToggleComplete}
                 onViewInArchive={onViewInArchive}
               />
               <button type="button" className="arc-unseal-link" onClick={onUnseal}>

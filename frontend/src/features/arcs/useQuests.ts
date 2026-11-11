@@ -73,14 +73,30 @@ function patchQuest(arcs: Arc[], questId: string, changes: Partial<Quest>): Arc[
   }));
 }
 
-// Drops a quest from both open buckets: used by remove() and to discard the instance an
-// un-complete made the server delete.
+// Drops a quest from both open buckets: used to discard the instance an un-complete made
+// the server delete (always open, so `recentCompleted` is never involved).
 function removeOpenQuest(arcs: Arc[], questId: string): Arc[] {
   return arcs.map((a) => ({
     ...a,
     quests: a.quests.filter((q) => q.id !== questId),
     upcoming: a.upcoming.filter((q) => q.id !== questId),
   }));
+}
+
+// Drops a quest from every bucket, for remove(): completed rows in `recentCompleted` are
+// deletable too, and deleting one also takes it out of the arc's completedCount.
+function removeQuest(arcs: Arc[], questId: string): Arc[] {
+  return arcs.map((a) => {
+    const removed = removeOpenQuest([a], questId)[0];
+    const wasCompleted = a.recentCompleted.some((q) => q.id === questId);
+    return wasCompleted
+      ? {
+          ...removed,
+          recentCompleted: a.recentCompleted.filter((q) => q.id !== questId),
+          completedCount: a.completedCount - 1,
+        }
+      : removed;
+  });
 }
 
 interface QuestLocation {
@@ -279,7 +295,7 @@ export function useQuests(
           removedQuestIdsRef.current.delete(questId);
           throw e;
         }
-        setArcs((prev) => removeOpenQuest(prev, questId));
+        setArcs((prev) => removeQuest(prev, questId));
       }),
     [runMutation, setArcs],
   );
