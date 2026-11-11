@@ -48,8 +48,8 @@
 
 .quest-detail-title {
   display: flex;
-  align-items: center;
-  gap: 2px;
+  align-items: baseline;
+  gap: 4px;
   flex: 1;
   min-width: 0;
   margin: 0;
