@@ -19,7 +19,6 @@ def create_arc(arc: schemas.ArcCreate, db: DbSession, repo: ArcRepo):
     return db_arc
 
 
-# todo: paging
 @router.get("", status_code=status.HTTP_200_OK, response_model=list[schemas.ArcExtended])
 def get_arcs(
     repo: ArcRepo,
