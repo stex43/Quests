@@ -65,6 +65,11 @@
   white-space: nowrap;
 }
 
+/* Cyrillic falls back to Philosopher (max weight 700); the thin text stroke thickens it. */
+.arc-title[data-script="cyrillic"] {
+  -webkit-text-stroke: 0.4px currentColor;
+}
+
 .arc-title-input {
   flex: 1;
   min-width: 0; /* so flex: 1 can shrink past the input's intrinsic width */

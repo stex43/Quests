@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Quest } from "../types";
 import { formatShortDateFromTimestamp } from "../dateFormat";
+import { hasCyrillic } from "../splitTitle";
 import { QuestRow } from "./QuestRow";
 import { CompletedPreviewList } from "./CompletedPreviewList";
 import "./ArcCard.css";
@@ -61,7 +62,9 @@ export const SealedArcHeader = memo(function SealedArcHeader({
         <span className="arc-seal-glyph" aria-hidden="true">
           ✓
         </span>
-        <span className="arc-title">{title}</span>
+        <span className="arc-title" data-script={hasCyrillic(title) ? "cyrillic" : undefined}>
+          {title}
+        </span>
         <span className="arc-sealed-label">sealed</span>
         <span className="arc-sealed-filler" aria-hidden="true" />
         <span className="arc-sealed-date">sealed {formatShortDateFromTimestamp(sealedAt)}</span>

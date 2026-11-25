@@ -1,8 +1,9 @@
-import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { describeRecurrence, formatDay, localCalendarDay } from "../dateFormat";
 import type { Quest, Recurrence } from "../types";
 import { PencilIcon } from "./icons";
 import { RecurrencePicker } from "./RecurrencePicker";
+import { hasCyrillic, splitTitle } from "../splitTitle";
 import "./QuestDetail.css";
 
 interface Props {
@@ -280,15 +281,18 @@ export const QuestDetail = memo(function QuestDetail({
   const isOverdue = openDueOn !== null && openDueOn < today;
   const isUpcoming = openDueOn !== null && openDueOn > today;
 
-  // Split on code points (not UTF-16 units) so an astral first character
-  // (e.g. an emoji) isn't torn into broken surrogate halves.
-  const titleChars = quest ? Array.from(quest.title) : [];
-  const dropCap = titleChars[0] ?? "";
-  const rest = titleChars.slice(1).join("");
-  // This span starts at the title's second character and is its own flex item,
-  // so it begins a line box -- where a leading space would be stripped and
-  // "A New Hope" would lose its word space. A NBSP survives that.
-  const titleRest = rest.startsWith(" ") ? NBSP + rest.slice(1) : rest;
+  const questTitle = quest?.title ?? "";
+  const { prefix, dropCap, titleRest } = useMemo(() => {
+    const parts = splitTitle(questTitle);
+    // Prefix and rest are each their own flex item, so each begins/ends a line box,
+    // where a trailing/leading space would be stripped ("🚀 Launch" -> "🚀L",
+    // "A New Hope" losing its word space). A NBSP survives that.
+    return {
+      prefix: parts.prefix.replace(/s+$/, (m) => NBSP.repeat(m.length)),
+      dropCap: parts.dropCap,
+      titleRest: parts.rest.startsWith(" ") ? NBSP + parts.rest.slice(1) : parts.rest,
+    };
+  }, [questTitle]);
 
   return (
     <div className="quest-detail-panel">
@@ -344,10 +348,21 @@ export const QuestDetail = memo(function QuestDetail({
                   <h2
                     ref={headingRef}
                     className="quest-detail-title"
+                    data-script={hasCyrillic(quest.title) ? "cyrillic" : undefined}
                     tabIndex={focusHeadingOnOpen ? -1 : undefined}
                   >
-                    <span className="quest-detail-dropcap">{dropCap}</span>
-                    <span className="quest-detail-title-rest">{titleRest}</span>
+                    <span className="visually-hidden">{quest.title}</span>
+                    {prefix && (
+                      <span className="quest-detail-title-prefix" aria-hidden="true">
+                        {prefix}
+                      </span>
+                    )}
+                    <span className="quest-detail-dropcap" aria-hidden="true">
+                      {dropCap}
+                    </span>
+                    <span className="quest-detail-title-rest" aria-hidden="true">
+                      {titleRest}
+                    </span>
                   </h2>
                 )}
                 {/* The accessible name is the action and stays the action; the reason the
