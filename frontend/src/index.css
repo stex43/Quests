@@ -100,8 +100,8 @@
   --qj-focus-ring-inverse: 2px solid var(--qj-selected-icon);
 
   /* Type */
-  --qj-font-display: "Cinzel Decorative", serif;
-  --qj-font-heading: "Cinzel", serif;
+  --qj-font-display: "Cinzel Decorative", "Philosopher", serif;
+  --qj-font-heading: "Cinzel", "Philosopher", serif;
   --qj-font-body: "EB Garamond", serif;
   --qj-glyph-font: "Segoe UI Symbol", "Apple Symbols", system-ui, sans-serif;
 
@@ -136,6 +136,53 @@ body {
   color: var(--qj-ink);
   margin: 0;
   background: var(--qj-backdrop);
+}
+
+/* Themed thin scrollbars, one path per engine. Chromium 121+/Safari 18.2+ ignore
+   ::-webkit-scrollbar once scrollbar-width/color is set, so the standard properties
+   apply only where ::-webkit-scrollbar is unsupported (Firefox). */
+@supports not selector(::-webkit-scrollbar) {
+  .arc-list-body,
+  .quest-detail-panel,
+  .quest-detail-description-input {
+    scrollbar-width: thin;
+    scrollbar-color: var(--qj-panel-border) transparent;
+  }
+}
+
+/* The transparent border + padding-box clip on the thumb insets it so it clears the
+   panels' rounded borders. */
+.arc-list-body::-webkit-scrollbar,
+.quest-detail-panel::-webkit-scrollbar,
+.quest-detail-description-input::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.arc-list-body::-webkit-scrollbar-track,
+.quest-detail-panel::-webkit-scrollbar-track,
+.quest-detail-description-input::-webkit-scrollbar-track,
+.arc-list-body::-webkit-scrollbar-corner,
+.quest-detail-panel::-webkit-scrollbar-corner,
+.quest-detail-description-input::-webkit-scrollbar-corner,
+.quest-detail-description-input::-webkit-resizer {
+  background: transparent;
+}
+
+.arc-list-body::-webkit-scrollbar-thumb,
+.quest-detail-panel::-webkit-scrollbar-thumb,
+.quest-detail-description-input::-webkit-scrollbar-thumb {
+  background: var(--qj-panel-border);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background-clip: padding-box;
+}
+
+.arc-list-body::-webkit-scrollbar-thumb:hover,
+.quest-detail-panel::-webkit-scrollbar-thumb:hover,
+.quest-detail-description-input::-webkit-scrollbar-thumb:hover {
+  background: var(--qj-crimson);
+  background-clip: padding-box;
 }
 
 ::selection {

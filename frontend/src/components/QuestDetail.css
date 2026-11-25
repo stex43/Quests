@@ -49,7 +49,8 @@
 .quest-detail-title {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  /* Row height is pinned to the drop cap's (same clamp), whatever font the rest falls back to. */
+  min-height: clamp(2.125rem, 1.1875rem + 1.6667vw, 2.75rem);
   flex: 1;
   min-width: 0;
   margin: 0;
@@ -63,15 +64,26 @@
   line-height: 1;
 }
 
+.quest-detail-title-prefix,
 .quest-detail-title-rest {
   font-family: var(--qj-font-heading);
   font-weight: 700;
   font-size: clamp(1.5rem, 0.9375rem + 1vw, 1.875rem);
   color: var(--qj-ink);
+  /* Same line-height as the drop cap, so the rest can never stretch the row below the
+     baseline (a one-character title has an empty rest and would otherwise sit higher). */
+  line-height: 1;
   /* Long unbroken titles must break rather than widen the panel. */
   min-width: 0;
   overflow-wrap: anywhere;
   letter-spacing: 0.5px;
+}
+
+/* Cinzel has no Cyrillic, so it falls back to Philosopher, which has no weight above 700;
+   the thin text stroke thickens it. */
+.quest-detail-title[data-script="cyrillic"] .quest-detail-title-prefix,
+.quest-detail-title[data-script="cyrillic"] .quest-detail-title-rest {
+  -webkit-text-stroke: 0.4px currentColor;
 }
 
 .quest-detail-meta {
@@ -374,10 +386,15 @@
     font-size: 21px;
   }
 
+  .quest-detail-title {
+    min-height: 30px;
+  }
+
   .quest-detail-dropcap {
     font-size: 30px;
   }
 
+  .quest-detail-title-prefix,
   .quest-detail-title-rest {
     font-size: 21px;
   }

@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useId, useRef, useState } from "react";
 import { PencilIcon, RepeatIcon, TrashIcon } from "./icons";
 import type { Arc, Quest, Recurrence } from "../types";
 import { describeRecurrence } from "../dateFormat";
+import { hasCyrillic } from "../splitTitle";
 import { QuestRow } from "./QuestRow";
 import { SealedArcHeader } from "./SealedArcHeader";
 import { CompletedFooter } from "./CompletedFooter";
@@ -224,7 +225,14 @@ export const ArcCard = memo(function ArcCard({
           >
             ▶
           </span>
-          {!isEditing && <span className="arc-title">{arc.title}</span>}
+          {!isEditing && (
+            <span
+              className="arc-title"
+              data-script={hasCyrillic(arc.title) ? "cyrillic" : undefined}
+            >
+              {arc.title}
+            </span>
+          )}
         </button>
 
         {isEditing && (
